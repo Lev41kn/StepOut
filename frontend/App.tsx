@@ -1,0 +1,36 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import LoadingScreen from './screens/LoadingScreen';
+import HomeScreen from './screens/HomeScreen';
+import SettingsScreen from './screens/SettingsScreen';
+
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+
+  return (
+
+    // Navigator Container
+    <NavigationContainer>
+
+      {/* Hides Default Top Bar */}
+      <Stack.Navigator screenOptions = {{ headerShown: false}}>
+
+        {/* Loading Screen */}
+        <Stack.Screen name = "LoadingScreen" component = {LoadingScreen} />
+
+        {/* Home Screen */}
+        <Stack.Screen name = "HomeScreen" component = {HomeScreen} />
+
+        {/* Settings Screen */}
+        <Stack.Screen name = "SettingsScreen" component = {SettingsScreen} />
+
+      </Stack.Navigator>
+
+    </NavigationContainer>
+
+  );
+
+}
