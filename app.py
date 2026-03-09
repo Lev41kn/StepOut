@@ -1,4 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
+import bleach
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -7,6 +8,8 @@ from werkzeug.security import generate_password_hash, check_password_hash # До
 from datetime import date, timedelta
 import os
 from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Ця команда відкриває наш "сейф"
 load_dotenv()
@@ -14,9 +17,20 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# НАЛАШТУВАННЯ ЗАХИСТУ ВІД БРУТФОРСУ (Rate Limiting)
+# get_remote_address означає, що ми запам'ятовуємо IP-адресу хакера
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"], # Базовий ліміт для всього сайту взагалі
+    storage_uri="memory://" # Тимчасово зберігаємо лонги в оперативній пам'яті
+)
+
 # Налаштування JWT (читаємо секретний ключ з нашого сейфу)
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 jwt = JWTManager(app)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -28,6 +42,7 @@ def get_db_connection():
 
 # 1. РЕЄСТРАЦІЯ (З безпечним хешуванням пароля)
 @app.route('/api/register', methods=['POST'])
+@limiter.limit("3 per minute")
 def register():
     data = request.json
     username = data.get('username')
@@ -51,6 +66,7 @@ def register():
 
 # 2. ВХІД / ЛОГІН (Перевірка даних)
 @app.route('/api/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     data = request.json
     username = data.get('username')
@@ -80,39 +96,47 @@ def login():
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
-# 3. ДОДАВАННЯ НОТАТОК (Будь-якого розміру)
+# 3. ДОДАВАННЯ НОТАТОК
 @app.route('/api/notes', methods=['POST'])
 @jwt_required()
 def add_note():
     data = request.json
-    user_id = data.get('user_id')
-    title = data.get('title')
-    content = data.get('content') # Сюди колега зможе слати величезні тексти
+    current_user_id = get_jwt_identity() 
+    
+    # БЕРЕМО ДАНІ
+    raw_title = data.get('title')
+    raw_content = data.get('content') 
+
+    # ОЧИЩАЄМО ДАНІ ВІД ХАКЕРСЬКИХ СКРИПТІВ (XSS Захист)
+    # bleach.clean() виріже всі теги <script>, <iframe> і залишить тільки чистий текст
+    safe_title = bleach.clean(raw_title) if raw_title else ""
+    safe_content = bleach.clean(raw_content) if raw_content else ""
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO notes (user_id, title, content) VALUES (%s, %s, %s)", (user_id, title, content))
+        # ЗБЕРІГАЄМО ТІЛЬКИ ОЧИЩЕНІ ДАНІ (safe_title, safe_content)
+        cursor.execute("INSERT INTO notes (user_id, title, content) VALUES (%s, %s, %s)", (current_user_id, safe_title, safe_content))
         conn.commit()
         return jsonify({"status": "success", "message": "Нотатку збережено!"}), 201
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
-# 4. ОТРИМАННЯ НОТАТОК (Читання - ТІЛЬКИ ДЛЯ АВТОРИЗОВАНИХ)
-@app.route('/api/notes/<int:user_id>', methods=['GET'])
-@jwt_required()  # <--- ОСЬ ЦЕЙ ОХОРОНЕЦЬ
-def get_notes(user_id):
-    # Далі йде твій старий код...
+
+# 4. ОТРИМАННЯ НОТАТОК (Прибираємо <int:user_id> з посилання)
+@app.route('/api/notes', methods=['GET'])
+@jwt_required()  
+def get_notes():
+    # Сервер сам знає, чиї нотатки віддавати, завдяки токену
+    current_user_id = get_jwt_identity()
+
     try:
         conn = get_db_connection()
-        # dictionary=True автоматично перетворює рядки з бази у зручний JSON-формат
         cursor = conn.cursor(dictionary=True) 
-        
-        # Шукаємо всі нотатки цього юзера і сортуємо від найновіших до найстаріших
         cursor.execute(
             "SELECT id, title, content, created_at FROM notes WHERE user_id = %s ORDER BY created_at DESC", 
-            (user_id,)
+            (current_user_id,)
         )
         notes = cursor.fetchall()
         
@@ -126,19 +150,19 @@ def get_notes(user_id):
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
-    # 5. ЩОДЕННИЙ ЧЕК-ІН (Для оновлення стріку)
+
+# 5. ЩОДЕННИЙ ЧЕК-ІН
 @app.route('/api/daily_check', methods=['POST'])
 @jwt_required()
 def daily_check():
-    data = request.json
-    user_id = data.get('user_id')
+    # Знову ж таки, беремо ID з токена
+    current_user_id = get_jwt_identity()
     
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Дістаємо поточний стрік і дату останнього візиту
-        cursor.execute("SELECT streak, last_active_date FROM users WHERE id = %s", (user_id,))
+        cursor.execute("SELECT streak, last_active_date FROM users WHERE id = %s", (current_user_id,))
         user = cursor.fetchone()
         
         if not user:
@@ -148,35 +172,26 @@ def daily_check():
         last_active = user['last_active_date']
         current_streak = user['streak']
         
-        # ЛОГІКА СТРІКІВ:
+        # ... (тут твоя логіка стріків залишається абсолютно без змін) ...
         if last_active == today:
-            # Юзер вже відкривав додаток сьогодні. Стрік не міняємо.
             message = "Ти вже заходив сьогодні. Стрік зберігається!"
-            
         elif last_active == today - timedelta(days=1):
-            # Юзер був вчора. Молодець, даємо +1!
             current_streak += 1
-            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (current_streak, today, user_id))
+            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (current_streak, today, current_user_id))
             conn.commit()
             message = "Стрік росте! Ти супер!"
-            
         else:
-            # Юзер пропустив більше одного дня (або це його найперший вхід). Скидаємо до 1.
             current_streak = 1
-            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (current_streak, today, user_id))
+            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (current_streak, today, current_user_id))
             conn.commit()
             message = "Стрік скинуто. Починаємо новий шлях!"
             
-        return jsonify({
-            "status": "success", 
-            "message": message,
-            "streak": current_streak
-        }), 200
+        return jsonify({"status": "success", "message": message, "streak": current_streak}), 200
         
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
-
 if __name__ == '__main__':
     # host='0.0.0.0' щоб колеги зі Львова бачили твій сервер
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # ssl_context='adhoc' автоматично генерує тимчасовий SSL сертифікат для локальної розробки
+    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
