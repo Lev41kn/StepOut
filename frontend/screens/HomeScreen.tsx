@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }: any ) {
 
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => console.log('Notes clicked')}>
+            <TouchableOpacity onPress={() => navigation.navigate('NotesScreen')}>
               <Image source={require('../assets/notes_icon.png')} style={styles.toolbarIcon} />
             </TouchableOpacity>
 
@@ -169,7 +169,7 @@ export default function HomeScreen({ navigation }: any ) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFE5C2',
+    backgroundColor: '#FFEBD2',
     paddingHorizontal: 20
   },
 
@@ -399,11 +399,8 @@ const styles = StyleSheet.create({
   },
   activeTabContainer: {
     backgroundColor: 'rgba(107, 66, 38, 0.15)',
-    // 1. Delete the padding!
-    // 2. Set an exact width and height so it cannot be squished
     width: 56,
     height: 56,
-    // 3. Make the borderRadius exactly HALF of the width/height (56 / 2 = 28)
     borderRadius: 24, 
     justifyContent: 'center',
     alignItems: 'center',
@@ -411,12 +408,11 @@ const styles = StyleSheet.create({
   activeIcon: {
     width: 32, 
     height: 32,
-    tintColor: '#FDF1E5', 
-    // --- NEW SHADOW PROPERTIES ---
-    shadowColor: '#000000', // Black shadow
-    shadowOffset: { width: 0, height: 2 }, // Pushes the shadow down slightly
-    shadowOpacity: 0.4, // Makes it semi-transparent (0.0 to 1.0)
-    shadowRadius: 3, // Blurs the edges
+    tintColor: '#FDF1E5',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
   },
 
 });

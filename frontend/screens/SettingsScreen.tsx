@@ -111,7 +111,7 @@ export default function SettingsScreen({ navigation }: any){
                           <Image source={require('../assets/home_icon.png')} style={styles.toolbarIcon} />
                         </TouchableOpacity>
             
-                        <TouchableOpacity onPress={() => console.log('Notes clicked')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('NotesScreen')}>
                           <Image source={require('../assets/notes_icon.png')} style={styles.toolbarIcon} />
                         </TouchableOpacity>
             
