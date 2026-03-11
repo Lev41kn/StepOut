@@ -6,6 +6,7 @@ import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NotesScreen from './screens/NotesScreen';
+import AddNotesScreen from './screens/AddNotesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,9 @@ export default function App() {
 
         {/* Notes Screen */}
         <Stack.Screen name = "NotesScreen" component = {NotesScreen} />
+
+        {/* AddNotes Screen */}
+        <Stack.Screen name = "AddNotesScreen" component = {AddNotesScreen} />
 
       </Stack.Navigator>
 

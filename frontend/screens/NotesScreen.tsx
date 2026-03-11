@@ -26,7 +26,7 @@ export default function NotesScreen({navigation} : any){
             {/* New Note Button */}
             <TouchableOpacity
                 style = {styles.plus}
-                onPress = {() => console.log('New Note Pressed')}>
+                onPress = {() => navigation.navigate('AddNotesScreen')}>
 
                 <Image source = {require('../assets/new_note_icon.png')} 
                     style = {styles.plusIcon} />
