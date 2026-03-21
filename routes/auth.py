@@ -11,6 +11,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 
+
 auth_bp = Blueprint('auth', __name__)
 
 # --- ДОПОМІЖНА ФУНКЦІЯ: ВІДПРАВКА ЛИСТА ---
@@ -82,7 +83,7 @@ def login():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
-        if user and check_password_hash(user['PASSWORD'], password):
+        if user and check_password_hash(user['password'], password):
             access_token = create_access_token(identity=user['id'])
             return jsonify({
                 "status": "success", 

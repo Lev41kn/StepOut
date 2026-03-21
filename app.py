@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from flask import Flask
-from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Імпортуємо наш лімітер з нейтральної території
 from extensions import limiter
@@ -19,10 +19,13 @@ from routes.mood import mood_bp
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Налаштування JWT
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')
+secret_key = os.getenv('JWT_SECRET_KEY')
+if not secret_key:
+    raise ValueError("КРИТИЧНА ПОМИЛКА: Не знайдено JWT_SECRET_KEY у файлі .env!")
+app.config['JWT_SECRET_KEY'] = secret_key
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 jwt = JWTManager(app)
 
@@ -51,6 +54,5 @@ def index():
     return "StepOut Backend API is Running!"
 
 if __name__ == '__main__':
-    # Запуск сервера
-    # debug=True дозволяє серверу перезавантажуватися при зміні коду
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    is_debug = os.getenv('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=5000, debug=is_debug)

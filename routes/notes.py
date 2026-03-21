@@ -20,6 +20,9 @@ def add_note():
     safe_title = bleach.clean(raw_title) if raw_title else ""
     safe_content = bleach.clean(raw_content) if raw_content else ""
 
+    if not safe_title and not safe_content:
+        return jsonify({"status": "error", "message": "Нотатка не може бути порожньою!"}), 400
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -40,13 +43,18 @@ def get_notes():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True) 
-        # Тепер ми спочатку сортуємо по is_pinned (щоб закріплені були зверху), а вже потім по даті створення
         cursor.execute(
             "SELECT id, title, content, is_pinned, created_at FROM notes WHERE user_id = %s ORDER BY is_pinned DESC, created_at DESC", 
             (current_user_id,)
         )
         notes = cursor.fetchall()
         
+        # ВИПРАВЛЕННЯ: Перетворюємо дати у текст, щоб jsonify не видав помилку
+        for note in notes:
+            if note['created_at']:
+                # Формат: "2026-03-21 14:30:00" (або зміни на свій смак)
+                note['created_at'] = note['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+
         return jsonify({
             "status": "success", 
             "notes": notes
@@ -92,7 +100,6 @@ def update_note(note_id):
     
     raw_title = data.get('title')
     raw_content = data.get('content')
-    # get() поверне значення або None. Ми конвертуємо його в bool (True/False)
     is_pinned = bool(data.get('is_pinned', False))
 
     safe_title = bleach.clean(raw_title) if raw_title else ""
@@ -102,15 +109,17 @@ def update_note(note_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Оновлюємо текст і статус закріплення
+        # ВИПРАВЛЕННЯ: Спочатку перевіряємо, чи є така нотатка у цього юзера
+        cursor.execute("SELECT id FROM notes WHERE id = %s AND user_id = %s", (note_id, current_user_id))
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Нотатку не знайдено або у вас немає прав"}), 404
+
+        # Якщо є - оновлюємо (навіть якщо текст не змінився, помилки не буде)
         cursor.execute(
-            "UPDATE notes SET title = %s, content = %s, is_pinned = %s WHERE id = %s AND user_id = %s", 
-            (safe_title, safe_content, is_pinned, note_id, current_user_id)
+            "UPDATE notes SET title = %s, content = %s, is_pinned = %s WHERE id = %s", 
+            (safe_title, safe_content, is_pinned, note_id)
         )
         conn.commit()
-
-        if cursor.rowcount == 0:
-            return jsonify({"status": "error", "message": "Нотатку не знайдено або у вас немає прав на її редагування"}), 404
 
         return jsonify({"status": "success", "message": "Нотатку оновлено!"}), 200
     finally:

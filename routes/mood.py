@@ -13,11 +13,11 @@ mood_bp = Blueprint('mood', __name__)
 def add_mood():
     data = request.json
     current_user_id = get_jwt_identity()
-    mood_value = data.get('mood_value') # Очікуємо число від фронтенду
-
-    if mood_value is None:
-        return jsonify({"status": "error", "message": "Не вказано значення настрою"}), 400
-
+    try:
+        mood_value = float(data.get('mood_value')) # Примусово робимо числом
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "Неправильне значення настрою"}), 400
+    
     today = date.today()
 
     try:
