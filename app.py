@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 
 # Імпортуємо наш лімітер з нейтральної території
-from extensions import limiter 
+from extensions import limiter
 
 # Імпортуємо Блюпрінти (маршрути)
 from routes.auth import auth_bp
