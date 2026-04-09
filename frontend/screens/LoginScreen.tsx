@@ -36,10 +36,11 @@ export default function LoginScreen({ navigation }: any) {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          {/* If the user types something, we show the checkmark! */}
+
           {email.length > 0 && (
              <Image source={require('../assets/checkmark_icon.png')} style={styles.inputIconRight} />
           )}
+
         </View>
 
         {/* --- 4. PASSWORD INPUT --- */}
@@ -51,7 +52,7 @@ export default function LoginScreen({ navigation }: any) {
             placeholderTextColor="#A98A73"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry={!isPasswordVisible} // Hides the text if the eye is closed
+            secureTextEntry={!isPasswordVisible}
           />
           <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
             <Image source={require('../assets/show_pswrd_icon.png')} style={styles.inputIconRight} />
@@ -66,7 +67,6 @@ export default function LoginScreen({ navigation }: any) {
         {/* --- 6. CONNECT BUTTON --- */}
         <TouchableOpacity 
           style={styles.connectButton} 
-          // For now, this just skips login and sends you to the Home Screen!
           onPress={() => navigation.replace('HomeScreen')} 
         >
           <Text style={styles.connectButtonText}>Connect</Text>
@@ -75,7 +75,7 @@ export default function LoginScreen({ navigation }: any) {
         {/* --- 7. SIGN UP LINK --- */}
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>Don't have an account?</Text>
-          <TouchableOpacity onPress={() => console.log('Go to Sign Up')}>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUpScreen')}>
             <Text style={styles.signupLink}>Sign up now</Text>
           </TouchableOpacity>
         </View>
@@ -88,7 +88,7 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF1E5', // Your beige background
+    backgroundColor: '#FDF1E5',
   },
   waveBackground: {
     position: 'absolute',
@@ -122,14 +122,12 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     resizeMode: 'contain',
-    // tintColor: '#5C3A21',
     marginRight: 10,
   },
   inputIconRight: {
     width: 20,
     height: 20,
     resizeMode: 'contain',
-    // tintColor: '#A98A73',
     marginLeft: 10,
   },
   input: {
@@ -138,7 +136,7 @@ const styles = StyleSheet.create({
     color: '#5C3A21',
   },
   forgotPasswordContainer: {
-    alignSelf: 'flex-end', // Pushes the text to the right side
+    alignSelf: 'flex-end',
     marginBottom: 40,
   },
   forgotPasswordText: {
@@ -146,12 +144,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   connectButton: {
-    backgroundColor: '#FFAA77', // Orange button
+    backgroundColor: '#FFAA77',
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 30,
-    // Soft shadow
+
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -172,7 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signupLink: {
-    color: '#FF7B42', // Brighter orange for the link
+    color: '#FF7B42',
     fontSize: 14,
     fontWeight: 'bold',
     marginLeft: 5,
