@@ -7,6 +7,7 @@ import HomeScreen from './screens/HomeScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NotesScreen from './screens/NotesScreen';
 import AddNotesScreen from './screens/AddNotesScreen';
+import LoginScreen from './screens/LoginScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,7 +19,7 @@ export default function App() {
     <NavigationContainer>
 
       {/* Hides Default Top Bar */}
-      <Stack.Navigator screenOptions = {{ headerShown: false}}>
+      <Stack.Navigator screenOptions = {{ headerShown: false}} initialRouteName="LoadingScreen">
 
         {/* Loading Screen */}
         <Stack.Screen name = "LoadingScreen" component = {LoadingScreen} />
@@ -34,6 +35,9 @@ export default function App() {
 
         {/* AddNotes Screen */}
         <Stack.Screen name = "AddNotesScreen" component = {AddNotesScreen} />
+
+        {/* Login Screen */}
+        <Stack.Screen name = "LoginScreen" component = {LoginScreen} />
 
       </Stack.Navigator>
 
