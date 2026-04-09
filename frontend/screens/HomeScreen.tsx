@@ -1,7 +1,6 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, TouchableOpacity} from 'react-native';
-import { PaperProvider, Text, ProgressBar, MD3LightTheme, IconButton } from 'react-native-paper';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { PaperProvider, Text, MD3LightTheme } from 'react-native-paper';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 //Theme
@@ -14,155 +13,84 @@ const theme = {
   }
 };
 
-
-
 export default function HomeScreen({ navigation }: any ) {
-
   return (
-    
-    <SafeAreaProvider>
+    <View style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <PaperProvider theme={theme}>
+          <SafeAreaView style={styles.container}>
 
-      <PaperProvider theme = {theme}>
-
-        <SafeAreaView style = {styles.container}>
-
-          {/* Settings Icon */}
-          <View style={styles.setIcon}>
-            <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
-              <Image 
-                source={require('../assets/settings_icon.png')} 
-                style={styles.setIconImg} 
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Streak Card */}
-          <View style = {styles.streakCard}>
-
-            <Text variant = 'headlineSmall' style = {styles.streakText}>
-              Стрік: 17 днів
-            </Text>
-
-            <Image
-              source = {require('../assets/streak_fox.png')}
-              style = {styles.foxAvatar}
-            />
-
-          </View>
-
-          {/* Mood Card */}
-          <View style = {styles.moodCard}>
-
-            <Text variant = 'titleMedium' style = {styles.moodTitle}>
-              Оціни свій настрій:
-            </Text>
-
-            <View style = {styles.sliderContainer}>
-
-              <LinearGradient
-                colors = {['#F07C3B', '#F8D800', '#03C03C']}
-                start = {{x: 0, y: 0}}
-                end = {{x:1, y: 0}}
-                style = {styles.gradientLine}
-              />
-
-              <Image 
-                source = {require('../assets/slider_thumb.png')}
-                style={styles.sliderThumb} 
-              />
-              
+            <View style={styles.setIcon}>
+              <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
+                <Image source={require('../assets/settings_icon.png')} style={styles.setIconImg} />
+              </TouchableOpacity>
             </View>
 
-          </View>
-
-          {/* ActiveCard */}
-          <View style = {styles.activeCard}>
-
-            <View style = {styles.activeHeader}>
-              <Text variant = 'titleMedium' style = {styles.activeHeaderText}>
-                Активні завдання:
-              </Text>
-            </View>
-
-            <View style = {styles.activeList}>
-
-              {/* task 1 */}
-              <View style = {styles.activeTask}>
-                <Text style = {styles.activeText}>Відміть свій настрій сьогодні.</Text>
-                <View style = {styles.activeCheck} />
+            <ScrollView
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingTop: 40,
+                paddingBottom: 130 // Padding for the floating TabBar
+              }}
+            >
+              {/* Streak Card */}
+              <View style={styles.streakWrapper}>
+                <View style={styles.streakCard}>
+                  <Text variant='headlineSmall' style={styles.streakText}>Стрік: 17 днів</Text>
+                </View>
+                <Image source={require('../assets/streak_fox.png')} style={styles.foxAvatar} />
               </View>
 
-              {/* task 2 */}
-              <View style = {styles.activeTask}>
-                <Text style = {styles.activeText}>Привітатися з кимось — «Привіт».</Text>
-                <View style = {styles.activeCheck} />
+              {/* Mood Card */}
+              <View style={styles.moodCard}>
+                <Text variant='titleMedium' style={styles.moodTitle}>Оціни свій настрій:</Text>
+                <View style={styles.sliderContainer}>
+                  <LinearGradient
+                    colors={['#F07C3B', '#F8D800', '#03C03C']}
+                    start={{x: 0, y: 0}} end={{x:1, y: 0}}
+                    style={styles.gradientLine}
+                  />
+                  <Image source={require('../assets/slider_thumb.png')} style={styles.sliderThumb} />
+                </View>
               </View>
 
-              {/* task 3 */}
-              <View style = {styles.activeTask}>
-                <Text style = {styles.activeText}>Поставити просте питання в магазині.</Text>
-                <View style = {styles.activeCheck} />
+              {/* Active Card */}
+              <View style={styles.activeCard}>
+                <View style={styles.activeHeader}>
+                  <Text variant='titleMedium' style={styles.activeHeaderText}>Активні завдання:</Text>
+                </View>
+                <View style={styles.activeList}>
+                  <View style={styles.activeTask}>
+                    <Text style={styles.activeText}>Відміть свій настрій сьогодні.</Text>
+                    <View style={styles.activeCheck} />
+                  </View>
+                  <View style={styles.activeTask}>
+                    <Text style={styles.activeText}>Привітатися з кимось — «Привіт».</Text>
+                    <View style={styles.activeCheck} />
+                  </View>
+                  <View style={styles.activeTask}>
+                    <Text style={styles.activeText}>Поставити просте питання в магазині.</Text>
+                    <View style={styles.activeCheck} />
+                  </View>
+                </View>
               </View>
 
-            </View>
-
-          </View>
-
-          {/* ActiveCard */}
-          <View style = {styles.dailyCard}>
-
-            <View style = {styles.dailyHeader}>
-              <Text variant = 'titleMedium' style = {styles.dailyHeaderText}>
-                Завдання на день:
-              </Text>
-            </View>
-
-            <View style = {styles.dailyTask}>
-                <Text style = {styles.dailyText}>Напиши одну річ,
-                   якою ти можеш бути задоволений сьогодні</Text>
-
-                <View style = {styles.dailyCheck} />
+              {/* Daily Card */}
+              <View style={styles.dailyCard}>
+                <View style={styles.dailyHeader}>
+                  <Text variant='titleMedium' style={styles.dailyHeaderText}>Завдання на день:</Text>
+                </View>
+                <View style={styles.dailyTask}>
+                  <Text style={styles.dailyText}>Напиши одну річ, якою ти можеш бути задоволений сьогодні</Text>
+                  <View style={styles.dailyCheck} />
+                </View>
               </View>
-
-          </View>
-
-          {/* Toolbar Card */}
-          <View style={styles.toolbarCard}>
-            
-            <TouchableOpacity onPress={() => console.log('Tasks clicked')}>
-              <Image source={require('../assets/tasks_icon.png')} style={styles.toolbarIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => console.log('Stats clicked')}>
-              <Image source={require('../assets/stat_icon.png')} style={styles.toolbarIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-                onPress={() => console.log('Home clicked')}
-                style = {styles.activeTabContainer}>
-                <Image source={require('../assets/home_icon.png')} style={[styles.toolbarIcon, 
-                { width: 36, height: 36 }, styles.activeIcon]} />
-
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.navigate('NotesScreen')}>
-              <Image source={require('../assets/notes_icon.png')} style={styles.toolbarIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => console.log('Profile clicked')}>
-              <Image source={require('../assets/profile_icon.png')} style={styles.toolbarIcon} />
-            </TouchableOpacity>
-
-          </View>
-
-          <StatusBar style = "dark" />
-
-        </SafeAreaView>
-
-      </PaperProvider>
-
-    </SafeAreaProvider>
-
+            </ScrollView>
+          </SafeAreaView>
+        </PaperProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }
 
@@ -172,9 +100,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFEBD2',
     paddingHorizontal: 20
   },
-
-  // Settings Card
-
   setIcon: {
     alignItems: 'flex-end',
     marginTop: 10,
@@ -184,46 +109,44 @@ const styles = StyleSheet.create({
     height: 47,
     resizeMode: 'contain'
   },
-
-  // Streak Card
-
-  streakCard: {
-    backgroundColor: '#FFDBAB',
-    // padding: 25,
-    borderRadius: 20,
+  streakWrapper: {
     marginTop: 8,
     position: 'relative',
+    zIndex: 10,
+    elevation: 10,
+  },
+  streakCard: {
+    backgroundColor: '#FFDBAB',
+    borderRadius: 20,
+    height: 72,
+    justifyContent: 'center',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    height: 72,
   },
   streakText: {
     fontWeight: 'bold',
     color: '#000',
     fontSize: 22,
     paddingLeft: 18,
-    paddingTop: 16
   },
   foxAvatar: {
     position: 'absolute',
     right: -10,
-    bottom: -33,
+    bottom: -20,
     width: 93,
     height: 93,
-    resizeMode: 'contain'
+    resizeMode: 'contain',
   },
-
-  // Mood Card
-
   moodCard: {
     backgroundColor: '#FFDBAB',
-    height: 113,
+    minHeight: 113,
     padding: 20,
     borderRadius: 20,
     marginTop: 21,
+    marginBottom: 20,
     position: 'relative',
     elevation: 3,
     shadowColor: '#000',
@@ -251,13 +174,10 @@ const styles = StyleSheet.create({
     left: '15%',
     bottom: -2,
   },
-
-  // Active Card
-
   activeCard: {
     backgroundColor: '#FFDBAB',
-    height: 196,
-    marginTop: 43,
+    marginTop: 10,
+    paddingBottom: 20,
     borderRadius: 20,
     overflow: 'hidden',
     elevation: 3,
@@ -270,7 +190,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFAD76',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    height: 33,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -287,7 +206,7 @@ const styles = StyleSheet.create({
     gap: 12
   },
   activeTask: {
-    height: 40,
+    minHeight: 50,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -313,13 +232,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#E5A96C'
   },
-
-  // Daily Card
-
   dailyCard: {
     backgroundColor: '#FFDBAB',
-    height: 114,
     marginTop: 34,
+    paddingBottom: 25,
     borderRadius: 20,
     overflow: 'hidden',
     elevation: 3,
@@ -332,7 +248,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFAD76',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    height: 33,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -344,7 +259,7 @@ const styles = StyleSheet.create({
     color: '#000'
   },
   dailyTask: {
-    height: 40,
+    minHeight: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -370,49 +285,5 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: '#E5A96C'
-  },
-
-  // Toolbar Card
-
-  toolbarCard: {
-    height: 70,
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    left: 0,
-    backgroundColor: '#FFB07D',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingTop: 17,
-    paddingBottom: 16,
-    // borderTopLeftRadius: 25,
-    // borderTopRightRadius: 25,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  toolbarIcon: {
-
-  },
-  activeTabContainer: {
-    backgroundColor: 'rgba(107, 66, 38, 0.15)',
-    width: 56,
-    height: 56,
-    borderRadius: 24, 
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activeIcon: {
-    width: 32, 
-    height: 32,
-    tintColor: '#FDF1E5',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-  },
-
+  }
 });

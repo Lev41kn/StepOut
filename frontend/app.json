@@ -21,13 +21,22 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "package": "com.anonymous.safemapapp",
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-navigation-bar",
+        {
+          "barStyle": "dark",
+          "visibility": "hidden",
+          "behavior": "inset-swipe"
+        }
+      ]
     ]
   }
 }

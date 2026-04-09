@@ -15,7 +15,7 @@ export default function LoadingScreen( {navigation}: any ){
 
         const timer = setTimeout(() => {
 
-                navigation.replace('HomeScreen');
+                navigation.replace('MainTabs');
 
         }, 3000); // in milliseconds
             
