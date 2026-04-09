@@ -97,11 +97,17 @@ export default function SignUpScreen({ navigation }: any) {
 
           {/* --- 5. CONNECT BUTTON --- */}
           <TouchableOpacity 
-            style={styles.connectButton} 
-            onPress={() => navigation.navigate('HomeScreen')} 
-          >
-            <Text style={styles.connectButtonText}>Connect</Text>
-          </TouchableOpacity>
+          style={styles.connectButton} 
+          onPress={() => 
+            // This completely wipes the history so you can't swipe back!
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            })
+          } 
+        >
+          <Text style={styles.connectButtonText}>Connect</Text>
+        </TouchableOpacity>
 
           {/* --- 6. LOG IN LINK --- */}
           <View style={styles.loginContainer}>

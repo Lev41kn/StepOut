@@ -2,6 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { StatusBar } from 'expo-status-bar';
+
 import LoadingScreen from './screens/LoadingScreen';
 import HomeScreen from './screens/HomeScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -10,43 +13,46 @@ import AddNotesScreen from './screens/AddNotesScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
 
+import TabBar from './components/TabBar';
+
 const Stack = createNativeStackNavigator();
+const Tab = createMaterialTopTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      tabBarPosition="bottom"
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{
+        swipeEnabled: true,
+      }}
+    >
+      <Tab.Screen name="HomeScreen" component={HomeScreen} />
+      <Tab.Screen name="NotesScreen" component={NotesScreen} />
+    </Tab.Navigator>
+  );
+}
 
 export default function App() {
-
   return (
 
-    // Navigator Container
-    <NavigationContainer>
+    <>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
 
-      {/* Hides Default Top Bar */}
-      <Stack.Navigator screenOptions = {{ headerShown: false}} initialRouteName="LoadingScreen">
+          <Stack.Screen name="LoadingScreen" component={LoadingScreen} />
+          <Stack.Screen name="LoginScreen" component={LoginScreen} />
+          <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
 
-        {/* Loading Screen */}
-        <Stack.Screen name = "LoadingScreen" component = {LoadingScreen} />
+          <Stack.Screen name="MainTabs" component={MainTabs} />
 
-        {/* Home Screen */}
-        <Stack.Screen name = "HomeScreen" component = {HomeScreen} />
+          <Stack.Screen name="AddNotesScreen" component={AddNotesScreen} />
+          <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
 
-        {/* Settings Screen */}
-        <Stack.Screen name = "SettingsScreen" component = {SettingsScreen} />
-
-        {/* Notes Screen */}
-        <Stack.Screen name = "NotesScreen" component = {NotesScreen} />
-
-        {/* AddNotes Screen */}
-        <Stack.Screen name = "AddNotesScreen" component = {AddNotesScreen} />
-
-        {/* Login Screen */}
-        <Stack.Screen name = "LoginScreen" component = {LoginScreen} />
-
-        {/* SignUp Screen */}
-        <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
-
-      </Stack.Navigator>
-
-    </NavigationContainer>
-
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
+    
   );
-
 }

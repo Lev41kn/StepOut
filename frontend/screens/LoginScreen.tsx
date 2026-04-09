@@ -67,7 +67,13 @@ export default function LoginScreen({ navigation }: any) {
         {/* --- 6. CONNECT BUTTON --- */}
         <TouchableOpacity 
           style={styles.connectButton} 
-          onPress={() => navigation.replace('HomeScreen')} 
+          onPress={() => 
+            // This completely wipes the history so you can't swipe back!
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            })
+          } 
         >
           <Text style={styles.connectButtonText}>Connect</Text>
         </TouchableOpacity>
