@@ -10,6 +10,24 @@ export default function LoginScreen({ navigation }: any) {
 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
+  const [hasError, setHasError] = useState(false);
+
+
+  const handleLogin = () => {
+      
+      if (email === '' || password.length < 8) {
+        setHasError(true);
+      } else {
+        setHasError(false);
+      
+        navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
+    }
+  };
+  
+
   return (
     <View style={styles.container}>
 
@@ -25,33 +43,49 @@ export default function LoginScreen({ navigation }: any) {
         <Text style={styles.title}>Log in</Text>
 
         {/* --- 3. EMAIL INPUT --- */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { borderBottomColor: hasError ? 'red' : '#A98A73' }]}>
           <Image source={require('../assets/email_icon.png')} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="StepOut@gmail.com"
             placeholderTextColor="#A98A73"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setHasError(false);
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
-
-          {email.length > 0 && (
+          {email.length > 0 && !hasError && (
              <Image source={require('../assets/checkmark_icon.png')} style={styles.inputIconRight} />
           )}
-
         </View>
 
+        {/* --- ERROR MESSAGE BLOCK --- */}
+        {hasError && (
+          <View style={styles.errorContainer}>
+            <View style={styles.errorIcon}>
+              <Text style={styles.errorIconText}>!</Text>
+            </View>
+            <Text style={styles.errorText}>
+              Incorrect password or email. Please try again or click "Forgot password?" to see other options.
+            </Text>
+          </View>
+        )}
+
         {/* --- 4. PASSWORD INPUT --- */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { borderBottomColor: hasError ? 'red' : '#A98A73' }]}>
           <Image source={require('../assets/lock_icon.png')} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#A98A73"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setHasError(false); // Hide error when typing
+            }}
             secureTextEntry={!isPasswordVisible}
           />
           <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
@@ -60,20 +94,14 @@ export default function LoginScreen({ navigation }: any) {
         </View>
 
         {/* --- 5. FORGOT PASSWORD LINK --- */}
-        <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => console.log('Go to Forgot Password')}>
+        <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => navigation.navigate('ForgotPswrdScreen')}>
           <Text style={styles.forgotPasswordText}>Forgot password?</Text>
         </TouchableOpacity>
 
         {/* --- 6. CONNECT BUTTON --- */}
         <TouchableOpacity 
           style={styles.connectButton} 
-          onPress={() => 
-            // This completely wipes the history so you can't swipe back!
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainTabs' }],
-            })
-          } 
+          onPress={handleLogin}
         >
           <Text style={styles.connectButtonText}>Connect</Text>
         </TouchableOpacity>
@@ -180,5 +208,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginLeft: 5,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: -15,
+    marginBottom: 20,
+  },
+  errorIcon: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+    marginRight: 6,
+  },
+  errorIconText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 11,
+    flex: 1,
   },
 });

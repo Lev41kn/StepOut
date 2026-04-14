@@ -12,6 +12,7 @@ import NotesScreen from './screens/NotesScreen';
 import AddNotesScreen from './screens/AddNotesScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
+import ForgotPswrdScreen from './screens/ForgotPswrdScreen';
 
 import TabBar from './components/TabBar';
 
@@ -42,8 +43,10 @@ export default function App() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
 
           <Stack.Screen name="LoadingScreen" component={LoadingScreen} />
+
           <Stack.Screen name="LoginScreen" component={LoginScreen} />
           <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
+          <Stack.Screen name="ForgotPswrdScreen" component={ForgotPswrdScreen} />
 
           <Stack.Screen name="MainTabs" component={MainTabs} />
 

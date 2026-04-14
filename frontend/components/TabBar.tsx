@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
 
-export default function TabBar({ state, navigation }) {
+export default function TabBar({ state, navigation } : any) {
   const currentRouteName = state.routeNames[state.index];
 
-  const renderNavButton = (routeName, iconSource, targetScreen) => {
+  const renderNavButton = (routeName: any, iconSource: any, targetScreen: any) => {
     const isActive = currentRouteName === targetScreen;
 
     return (
