@@ -1,162 +1,138 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Keyboard, Modal } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function AddNoteScreen({navigation} : any) {
 
     const [noteText, setNoteText] = useState('');
-
     const [isTyping, setIsTyping] = useState(false);
+    
+    // --- ADDED MODAL STATE ---
+    const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
 
     const finishTyping = () => {
         Keyboard.dismiss();
         setIsTyping(false);
     }
 
+    const handleDelete = () => {
+        setNoteText('');
+        setDeleteModalVisible(false);
+        navigation.goBack();
+    }
+
     return (
-
-        <SafeAreaView style = {styles.container}>
-
+        <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
-                behavior = {Platform.OS === 'ios' ? 'padding' : 'height'}
-                style ={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
             >
-
                 {/* Header */}
                 <View style={styles.headerRow}>
-
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Image source={require('../assets/return_icon.png')} style={styles.icon} />
                     </TouchableOpacity>
 
                     <View style={styles.headerRightControls}>
-            
                         <View style={styles.actionPill}>
                             <TouchableOpacity>
                                 <Image source={require('../assets/notes_import_icon.png')} style={styles.smallIcon} />
                             </TouchableOpacity>
-                            <TouchableOpacity>
+                            {/* --- HOOKED UP DELETE BUTTON --- */}
+                            <TouchableOpacity onPress={() => setDeleteModalVisible(true)}>
                                 <Image source={require('../assets/notes_delete_icon.png')} style={styles.smallIcon} />
                             </TouchableOpacity>
                         </View>
 
                         {isTyping && (
-
                             <TouchableOpacity style={styles.checkCircle} onPress={finishTyping}>
                                 <Image source={require('../assets/notes_done_icon.png')} style={styles.checkIcon} />
                             </TouchableOpacity>
-
                         )}
-
                     </View>
                 </View>
 
                 {/* Date text */}
-                <Text style = {styles.dateText}>5 березня 2026р. о 22:31</Text>
+                <Text style={styles.dateText}>5 березня 2026р. о 22:31</Text>
 
                 {/* Text Input */}
                 <TextInput
-                    style = {styles.textInput}
-                    placeholder = "Почніть писати тут..."
-                    placeholderTextColor = "#000"
-                    multiline = {true}
-                    textAlignVertical = 'top'
-                    value = {noteText}
-                    onChangeText = {setNoteText}
-                    keyboardAppearance = "light"
-                    
-                    onFocus = {() => setIsTyping(true)}
-                    onBlur = {() => setIsTyping(false)}
+                    style={styles.textInput}
+                    placeholder="Почніть писати тут..."
+                    placeholderTextColor="#000"
+                    multiline={true}
+                    textAlignVertical='top'
+                    value={noteText}
+                    onChangeText={setNoteText}
+                    keyboardAppearance="light"
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
                 />
 
                 {/* Dynamic Bottom Toolbar */}
-
-                
                 {isTyping ? (
-
                     <View style={styles.typingToolbar}>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_font_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_list_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_table_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_paperclip_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_center_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_link_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image source={require('../assets/notes_pencil_icon.png')} style={styles.toolIcon} />
-                        </TouchableOpacity>
-                    
+                        <TouchableOpacity><Image source={require('../assets/notes_font_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_list_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_table_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_paperclip_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_center_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_link_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                        <TouchableOpacity><Image source={require('../assets/notes_pencil_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
                     </View>
-
                 ) : (
-
-                    <View style = {styles.bottomToolbar}>
-
-                        <View style = {styles.toolsPill}>
-
-                            <TouchableOpacity>
-                                <Image source = {require('../assets/notes_list_icon.png')}
-                                    style = {styles.toolIcon} />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity>
-                                <Image source = {require('../assets/notes_paperclip_icon.png')}
-                                    style = {styles.toolIcon} />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity>
-                                <Image source = {require('../assets/notes_pencil_icon.png')}
-                                    style = {styles.toolIcon} />
-                            </TouchableOpacity>
-
+                    <View style={styles.bottomToolbar}>
+                        <View style={styles.toolsPill}>
+                            <TouchableOpacity><Image source={require('../assets/notes_list_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                            <TouchableOpacity><Image source={require('../assets/notes_paperclip_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
+                            <TouchableOpacity><Image source={require('../assets/notes_pencil_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
                         </View>
 
-                        {/* New Note Button */}
                         <TouchableOpacity
-                            style = {styles.newNote}
-                            onPress = { () => {
-                                    setNoteText('')
-                                    finishTyping
-                                }
-                            }
+                            style={styles.newNote}
+                            onPress={() => {
+                                setNoteText('');
+                                finishTyping();
+                            }}
                         >
-                            <Image source = {require('../assets/notes_create_icon.png')}
-                                style = {styles.toolIcon} />
-
+                            <Image source={require('../assets/notes_create_icon.png')} style={styles.toolIcon} />
                         </TouchableOpacity>
-
                     </View>
-
                 )}
-
             </KeyboardAvoidingView>
 
+            {/* DELETE CONFIRMATION MODAL */}
+            <Modal
+                transparent={true}
+                visible={isDeleteModalVisible}
+                animationType="fade"
+                onRequestClose={() => setDeleteModalVisible(false)}
+            >
+                {/* Darkened Background Overlay */}
+                <View style={styles.modalOverlay}>
+                    {/* Orange Modal Box */}
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>
+                            Ви дійсно бажаєте{'\n'}видалити цю нотатку?
+                        </Text>
+                        
+                        <TouchableOpacity style={styles.modalButton} onPress={handleDelete}>
+                            <Text style={styles.modalButtonTextRed}>Видалити</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.modalButton} onPress={() => setDeleteModalVisible(false)}>
+                            <Text style={styles.modalButtonText}>Скасувати</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
-
-    )
-
+    );
 }
 
+// --- STYLES ---
 const styles = StyleSheet.create({
-
     container: {
         flex: 1,
         backgroundColor: '#FFEBD2',
@@ -257,4 +233,50 @@ const styles = StyleSheet.create({
         tintColor: '#5C3A21',
     },
 
-})
+    // --- MODAL STYLES ---
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: '#FFAA77',
+        width: '75%',
+        borderRadius: 20,
+        paddingVertical: 30,
+        paddingHorizontal: 25,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 10,
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+        textAlign: 'center',
+        marginBottom: 25,
+        lineHeight: 22,
+    },
+    modalButton: {
+        backgroundColor: '#FFEBD2',
+        width: '100%',
+        paddingVertical: 12,
+        borderRadius: 25,
+        alignItems: 'center',
+        marginVertical: 8,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    modalButtonTextRed: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#C00000',
+    }
+});

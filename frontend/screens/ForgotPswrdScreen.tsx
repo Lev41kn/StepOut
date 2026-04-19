@@ -13,8 +13,22 @@ export default function ForgotPswrdScreen({ navigation }: any) {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+
+  // --- ADDED ERROR STATE ---
+  const [confirmPasswordError, setConfirmPasswordError] = useState(false);
+
+  // --- ADDED VALIDATION LOGIC ---
+  const handlePasswordUpdate = () => {
+    
+    if (newPassword !== confirmPassword || confirmPassword === '') {
+      setConfirmPasswordError(true);
+    } else {
+      setConfirmPasswordError(false);
+      
+      navigation.navigate('LoginScreen');
+    }
+  };
 
   const renderStep = () => {
     if (step === 1) {
@@ -53,7 +67,6 @@ export default function ForgotPswrdScreen({ navigation }: any) {
 
     if (step === 2) {
       return (
-
         //Enter Code 
         <>
           <Text style={styles.title}>Enter code</Text>
@@ -87,7 +100,6 @@ export default function ForgotPswrdScreen({ navigation }: any) {
 
     if (step === 3) {
       return (
-
         // New Password
         <>
           <Text style={styles.title}>New{'\n'}password</Text>
@@ -100,7 +112,10 @@ export default function ForgotPswrdScreen({ navigation }: any) {
               placeholder="New Password"
               placeholderTextColor="#A98A73"
               value={newPassword}
-              onChangeText={setNewPassword}
+              onChangeText={(text) => {
+                setNewPassword(text);
+                setConfirmPasswordError(false);
+              }}
               secureTextEntry={!isPasswordVisible}
             />
             <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
@@ -108,27 +123,41 @@ export default function ForgotPswrdScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* Dynamic border color added here */}
+          <View style={[styles.inputContainer, { borderBottomColor: confirmPasswordError ? 'red' : '#A98A73' }]}>
             <Image source={require('../assets/lock_icon.png')} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
               placeholderTextColor="#A98A73"
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                setConfirmPasswordError(false);
+              }}
               secureTextEntry={!isConfirmPasswordVisible}
             />
 
             <TouchableOpacity onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}>
               <Image source={require('../assets/show_pswrd_icon.png')} style={styles.inputIconRight} />
             </TouchableOpacity>
-
           </View>
+
+          {/* CONFIRM PASSWORD ERROR MESSAGE */}
+          {confirmPasswordError && (
+            <View style={styles.errorContainer}>
+              <View style={styles.errorIcon}>
+                <Text style={styles.errorIconText}>!</Text>
+              </View>
+              <Text style={styles.errorText}>
+                Passwords do not match. Please try again.
+              </Text>
+            </View>
+          )}
 
           <TouchableOpacity 
             style={styles.actionButton} 
-            
-            onPress={() => navigation.navigate('LoginScreen')}
+            onPress={handlePasswordUpdate}
           >
             <Text style={styles.actionButtonText}>Update</Text>
           </TouchableOpacity>
@@ -151,6 +180,7 @@ export default function ForgotPswrdScreen({ navigation }: any) {
   );
 }
 
+// --- STYLES ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -217,6 +247,35 @@ const styles = StyleSheet.create({
     color: '#5C3A21',
     textAlign: 'center',
   },
+
+  // --- ADDED ERROR STYLES ---
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: -20,
+    marginBottom: 20,
+  },
+  errorIcon: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+    marginRight: 6,
+  },
+  errorIconText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 11,
+    flex: 1, 
+  },
+
   actionButton: {
     backgroundColor: '#FFAA77',
     paddingVertical: 15,

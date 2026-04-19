@@ -64,13 +64,16 @@ export default function ProfileScreen({ navigation }: any) {
 
           </View>
 
+          <View style={styles.stickyTitleContainer}>
+            <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>Мої досягнення:</Text>
+          </View>
+
           {/* SCROLLABLE BOTTOM SECTION */}
           <ScrollView 
             style={styles.scrollSection} 
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            <Text style={[styles.sectionTitle, { marginTop: 0 }]}>Мої досягнення:</Text>
             
             <View style={styles.achievementsGrid}>
               {ACHIEVEMENTS.map((badge) => (
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   staticSection: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   setIcon: {
     alignItems: 'flex-end',
@@ -157,6 +160,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
+
+  stickyTitleContainer: {
+    paddingHorizontal: 20,
+  },
+
   // --- SCROLL SECTION ---
   scrollSection: {
     flex: 1,
@@ -164,6 +172,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 130,
+    paddingTop: 5,
   },
   achievementsGrid: {
     flexDirection: 'row',
