@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { View, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { PaperProvider, Text, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,34 @@ const theme = {
 };
 
 export default function HomeScreen({ navigation }: any ) {
+  // --- MOCK STATE ---
+  const [activeTasks, setActiveTasks] = useState([
+    { id: '1', text: 'Відміть свій настрій сьогодні.', isCompleted: true },
+    { id: '2', text: 'Привітатися з кимось — «Привіт».', isCompleted: false },
+    { id: '3', text: 'Поставити просте питання в магазині.', isCompleted: false },
+  ]);
+
+  const [dailyTasks, setDailyTasks] = useState([
+    { id: 'd1', text: 'Напиши одну річ, якою ти можеш бути задоволений сьогодні', isCompleted: false }
+  ]);
+
+  // --- TOGGLE FUNCTIONS ---
+  const toggleActiveTask = (id: string) => {
+    setActiveTasks(currentTasks => 
+      currentTasks.map(task => 
+        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
+      )
+    );
+  };
+
+  const toggleDailyTask = (id: string) => {
+    setDailyTasks(currentTasks => 
+      currentTasks.map(task => 
+        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
+      )
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -31,7 +60,7 @@ export default function HomeScreen({ navigation }: any ) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
                 paddingTop: 40,
-                paddingBottom: 130 // Padding for the floating TabBar
+                paddingBottom: 130 
               }}
             >
               {/* Streak Card */}
@@ -55,36 +84,56 @@ export default function HomeScreen({ navigation }: any ) {
                 </View>
               </View>
 
-              {/* Active Card */}
+              {/* ACTIVE TASKS CARD */}
               <View style={styles.activeCard}>
                 <View style={styles.activeHeader}>
                   <Text variant='titleMedium' style={styles.activeHeaderText}>Активні завдання:</Text>
                 </View>
                 <View style={styles.activeList}>
-                  <View style={styles.activeTask}>
-                    <Text style={styles.activeText}>Відміть свій настрій сьогодні.</Text>
-                    <View style={styles.activeCheck} />
-                  </View>
-                  <View style={styles.activeTask}>
-                    <Text style={styles.activeText}>Привітатися з кимось — «Привіт».</Text>
-                    <View style={styles.activeCheck} />
-                  </View>
-                  <View style={styles.activeTask}>
-                    <Text style={styles.activeText}>Поставити просте питання в магазині.</Text>
-                    <View style={styles.activeCheck} />
-                  </View>
+                  
+                  {activeTasks.map((task) => (
+                    <TouchableOpacity 
+                      key={task.id} 
+                      style={styles.activeTask}
+                      onPress={() => toggleActiveTask(task.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.activeText}>{task.text}</Text>
+                      <View style={[
+                        styles.activeCheck, 
+                        task.isCompleted && styles.activeCheckCompleted
+                      ]}>
+                        {task.isCompleted && <Text style={styles.checkMarkText}>✓</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+
                 </View>
               </View>
 
-              {/* Daily Card */}
+              {/* DAILY TASK CARD */}
               <View style={styles.dailyCard}>
                 <View style={styles.dailyHeader}>
                   <Text variant='titleMedium' style={styles.dailyHeaderText}>Завдання на день:</Text>
                 </View>
-                <View style={styles.dailyTask}>
-                  <Text style={styles.dailyText}>Напиши одну річ, якою ти можеш бути задоволений сьогодні</Text>
-                  <View style={styles.dailyCheck} />
-                </View>
+                
+                {dailyTasks.map((task) => (
+                  <TouchableOpacity 
+                    key={task.id}
+                    style={styles.dailyTask}
+                    onPress={() => toggleDailyTask(task.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.dailyText}>{task.text}</Text>
+                    <View style={[
+                      styles.dailyCheck,
+                      task.isCompleted && styles.activeCheckCompleted
+                    ]}>
+                      {task.isCompleted && <Text style={styles.checkMarkText}>✓</Text>}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
               </View>
             </ScrollView>
           </SafeAreaView>
@@ -230,7 +279,17 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E5A96C'
+    backgroundColor: '#E5A96C',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  activeCheckCompleted: {
+    backgroundColor: '#C5894C',
+  },
+  checkMarkText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   dailyCard: {
     backgroundColor: '#FFDBAB',
@@ -284,6 +343,8 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E5A96C'
+    backgroundColor: '#E5A96C',
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 });

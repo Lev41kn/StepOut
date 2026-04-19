@@ -32,11 +32,11 @@ export default function TabBar({ state, navigation } : any) {
   return (
     <View style={styles.toolbarContainer}>
       <View style={styles.toolbarCard}>
-        {renderNavButton('Tasks', require('../assets/tasks_icon.png'), null)}
-        {renderNavButton('Stats', require('../assets/stat_icon.png'), null)}
+        {renderNavButton('Tasks', require('../assets/tasks_icon.png'), 'TasksScreen')}
+        {renderNavButton('Stats', require('../assets/stat_icon.png'), 'StatsScreen')}
         {renderNavButton('Home', require('../assets/home_icon.png'), 'HomeScreen')}
         {renderNavButton('Notes', require('../assets/notes_icon.png'), 'NotesScreen')}
-        {renderNavButton('Profile', require('../assets/profile_icon.png'), null)}
+        {renderNavButton('Profile', require('../assets/profile_icon.png'), 'ProfileScreen')}
       </View>
     </View>
   );

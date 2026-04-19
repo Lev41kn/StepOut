@@ -13,6 +13,9 @@ import AddNotesScreen from './screens/AddNotesScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import ForgotPswrdScreen from './screens/ForgotPswrdScreen';
+import StatsScreen from './screens/StatsScreen';
+import TasksScreen from './screens/TasksScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
 import TabBar from './components/TabBar';
 
@@ -30,6 +33,10 @@ function MainTabs() {
     >
       <Tab.Screen name="HomeScreen" component={HomeScreen} />
       <Tab.Screen name="NotesScreen" component={NotesScreen} />
+      <Tab.Screen name="StatsScreen" component={StatsScreen} />
+      <Tab.Screen name="TasksScreen" component={TasksScreen} />
+      <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
+
     </Tab.Navigator>
   );
 }
