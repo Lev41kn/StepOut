@@ -1,6 +1,11 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
+/__pycache__
+/.vs/StepOut/FileContentIndex
+/.vs/StepOut/v17
+/.vs/StepOut/CopilotIndices/17.14.1584.41681
 /.vs
+/routes/__pycache__
 .env
