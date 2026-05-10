@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, 
   KeyboardAvoidingView, Platform, Dimensions, ScrollView } from 'react-native';
 
+import { API_URL } from '../config';
+
 const { width } = Dimensions.get('window');
 
 export default function SignUpScreen({ navigation }: any) {
@@ -20,7 +22,7 @@ export default function SignUpScreen({ navigation }: any) {
   const [confirmPasswordError, setConfirmPasswordError] = useState(false);
 
   // --- VALIDATION LOGIC ---
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     let isValid = true;
 
     // Regex checks for: 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special character
@@ -42,12 +44,44 @@ export default function SignUpScreen({ navigation }: any) {
       setConfirmPasswordError(false);
     }
 
-    // If both pass, navigate to the main app!
+    // --- NEW BACKEND LOGIC GOES HERE ---
+    // If both pass, send to the backend!
     if (isValid) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
-      });
+      try {
+        // Send the data to the backend
+        const response = await fetch(`${API_URL}/signup`, { 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            // Make sure you have these state variables in your component!
+            name: name,         
+            email: email,       
+            password: password, 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert("Success! The backend received the data.");
+        
+          // Once we know the backend works, we will uncomment your navigation!
+          /*
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+          */
+        } else {
+          alert("Backend says: " + data.message); // E.g., "Email already in use"
+        }
+
+      } catch (error) {
+        console.error("Fetch error:", error);
+        alert("Could not connect to the server. Is Vlad's computer ready?");
+      }
     }
   };
 
