@@ -32,11 +32,11 @@ export default function TabBar({ state, navigation } : any) {
   return (
     <View style={styles.toolbarContainer}>
       <View style={styles.toolbarCard}>
-        {renderNavButton('Tasks', require('../assets/tasks_icon.png'), 'TasksScreen')}
-        {renderNavButton('Stats', require('../assets/stat_icon.png'), 'StatsScreen')}
-        {renderNavButton('Home', require('../assets/home_icon.png'), 'HomeScreen')}
-        {renderNavButton('Notes', require('../assets/notes_icon.png'), 'NotesScreen')}
-        {renderNavButton('Profile', require('../assets/profile_icon.png'), 'ProfileScreen')}
+        {renderNavButton('TasksScreen', require('../assets/tasks_icon.png'), 'TasksScreen')}
+        {renderNavButton('StatsScreen', require('../assets/stat_icon.png'), 'StatsScreen')}
+        {renderNavButton('HomeScreen', require('../assets/home_icon.png'), 'HomeScreen')}
+        {renderNavButton('NotesScreen', require('../assets/notes_icon.png'), 'NotesScreen')}
+        {renderNavButton('ProfileScreen', require('../assets/profile_icon.png'), 'ProfileScreen')}
       </View>
     </View>
   );
@@ -44,10 +44,6 @@ export default function TabBar({ state, navigation } : any) {
 
 const styles = StyleSheet.create({
   toolbarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: 'transparent',
     elevation: 0,
   },
@@ -77,8 +73,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    top: 0,
   },
   activeIcon: {
     tintColor: '#F7B28B',

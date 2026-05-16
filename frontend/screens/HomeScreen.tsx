@@ -3,6 +3,7 @@ import { View, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-nat
 import { PaperProvider, Text, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Slider from '@react-native-community/slider';
 
 //Theme
 const theme = {
@@ -25,6 +26,27 @@ export default function HomeScreen({ navigation }: any ) {
   const [dailyTasks, setDailyTasks] = useState([
     { id: 'd1', text: 'Напиши одну річ, якою ти можеш бути задоволений сьогодні', isCompleted: false }
   ]);
+
+  // --- SLIDER ---
+  const [moodValue, setMoodValue] = useState(15);
+  const handleSlidingComplete = (val: number) => {
+      const today = new Date();
+
+      const moodPayload = {
+        mood_score: Math.round(val),
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+      };
+      console.log("Ready for backend:", moodPayload);
+
+      setActiveTasks(currentTasks =>
+            currentTasks.map(task =>
+              task.id === '1' ? { ...task, isCompleted: true } : task
+            )
+          );
+  };
+
 
   // --- TOGGLE FUNCTIONS ---
   const toggleActiveTask = (id: string) => {
@@ -71,18 +93,49 @@ export default function HomeScreen({ navigation }: any ) {
                 <Image source={require('../assets/streak_fox.png')} style={styles.foxAvatar} />
               </View>
 
-              {/* Mood Card */}
-              <View style={styles.moodCard}>
-                <Text variant='titleMedium' style={styles.moodTitle}>Оціни свій настрій:</Text>
-                <View style={styles.sliderContainer}>
-                  <LinearGradient
-                    colors={['#F07C3B', '#F8D800', '#03C03C']}
-                    start={{x: 0, y: 0}} end={{x:1, y: 0}}
-                    style={styles.gradientLine}
-                  />
-                  <Image source={require('../assets/slider_thumb.png')} style={styles.sliderThumb} />
-                </View>
-              </View>
+             {/* Mood Card :D */}
+             <View style={styles.moodCard}>
+               <Text variant='titleMedium' style={styles.moodTitle}>Оціни свій настрій:</Text>
+               <View style={styles.sliderContainer}>
+                 <View style={{ position: 'absolute', width: '100%', height: '100%', justifyContent: 'center' }}>
+                   <LinearGradient
+                     colors={['#F07C3B', '#F8D800', '#03C03C']}
+                     start={{x: 0, y: 0}} end={{x:1, y: 0}}
+                     style={styles.gradientLine}
+                   />
+                 </View>
+                 <View style={{ height: '100%', marginHorizontal: 12 }}>
+                   <Image
+                     source={require('../assets/slider_thumb.png')}
+                     pointerEvents="none"
+                     style={[
+                       styles.sliderThumb,
+                       {
+                         left: `${moodValue}%`,
+                         transform: [{ translateX: -10 }]
+                       }
+                     ]}
+                   />
+                   <Slider
+                     style={{
+                       position: 'absolute',
+                       width: '100%',
+                       height: 80,
+                       top: -20,
+                     }}
+                     minimumValue={0}
+                     maximumValue={100}
+                     value={moodValue}
+                     onValueChange={setMoodValue}
+                     onSlidingComplete={handleSlidingComplete}
+                     minimumTrackTintColor="transparent"
+                     maximumTrackTintColor="transparent"
+                     thumbTintColor="transparent"
+                   />
+                 </View>
+
+               </View>
+             </View>
 
               {/* ACTIVE TASKS CARD */}
               <View style={styles.activeCard}>
@@ -224,17 +277,17 @@ const styles = StyleSheet.create({
     bottom: -2,
   },
   activeCard: {
-    backgroundColor: '#FFDBAB',
-    marginTop: 10,
-    paddingBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
+      backgroundColor: '#FFDBAB',
+      marginTop: 10,
+      paddingBottom: 25,
+      borderRadius: 20,
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.1,
+      shadowRadius: 4
+    },
   activeHeader: {
     backgroundColor: '#FFAD76',
     paddingVertical: 12,
@@ -250,18 +303,19 @@ const styles = StyleSheet.create({
     color: '#000'
   },
   activeList: {
-    paddingTop: 10,
-    padding: 27,
-    gap: 12
-  },
+        paddingTop: 21,
+        paddingBottom: 0,
+        paddingHorizontal: 27,
+        gap: 15,
+      },
   activeTask: {
-    minHeight: 50,
+    minHeight: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FEC386',
-    paddingTop: 10,
-    padding: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderRadius: 12,
     elevation: 2,
     shadowColor: '#000',
