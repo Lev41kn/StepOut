@@ -25,18 +25,18 @@ const Tab = createMaterialTopTabNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator
-      tabBarPosition="bottom"
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{
-        swipeEnabled: true,
-      }}
-    >
+          initialRouteName="HomeScreen"
+          tabBarPosition="bottom"
+          tabBar={(props) => <TabBar {...props} />}
+          screenOptions={{
+            swipeEnabled: true,
+          }}
+      >
+      <Tab.Screen name="TasksScreen" component={TasksScreen} />
+      <Tab.Screen name="StatsScreen" component={StatsScreen} />
       <Tab.Screen name="HomeScreen" component={HomeScreen} />
       <Tab.Screen name="NotesScreen" component={NotesScreen} />
-      <Tab.Screen name="StatsScreen" component={StatsScreen} />
-      <Tab.Screen name="TasksScreen" component={TasksScreen} />
       <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
-
     </Tab.Navigator>
   );
 }

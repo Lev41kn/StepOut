@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Keyboard, Modal } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function AddNoteScreen({navigation} : any) {
+export default function AddNoteScreen({route, navigation } : any) {
 
-    const [noteText, setNoteText] = useState('');
+    const existingNote = route.params?.note;
+    const [noteTitle, setNoteTitle] = useState(existingNote ? existingNote.title : '');
+    const [noteText, setNoteText] = useState(existingNote ? existingNote.text : '');
+
     const [isTyping, setIsTyping] = useState(false);
-    
+
     // --- ADDED MODAL STATE ---
     const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
 
@@ -15,11 +19,42 @@ export default function AddNoteScreen({navigation} : any) {
         setIsTyping(false);
     }
 
-    const handleDelete = () => {
-        setNoteText('');
-        setDeleteModalVisible(false);
-        navigation.goBack();
-    }
+    const handleDelete = async () => {
+            setDeleteModalVisible(false);
+            if (existingNote) {
+                const storedNotes = await AsyncStorage.getItem('@stepout_notes');
+                if (storedNotes) {
+                    const parsedNotes = JSON.parse(storedNotes).filter((n: any) => n.id !== existingNote.id);
+                    await AsyncStorage.setItem('@stepout_notes', JSON.stringify(parsedNotes));
+                }
+            }
+            navigation.goBack();
+        }
+
+    const handleSaveAndExit = async () => {
+            if (noteTitle.trim().length > 0 || noteText.trim().length > 0) {
+                const storedNotes = await AsyncStorage.getItem('@stepout_notes');
+                let parsedNotes = storedNotes ? JSON.parse(storedNotes) : [];
+
+                if (existingNote) {
+                    parsedNotes = parsedNotes.map((n: any) =>
+                        n.id === existingNote.id ? { ...n, title: noteTitle, text: noteText } : n
+                    );
+                } else {
+                    const today = new Date();
+                    const formattedDate = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}.${today.getFullYear()}`;
+                    const newNote = {
+                        id: Date.now().toString(),
+                        title: noteTitle,
+                        text: noteText,
+                        date: formattedDate,
+                    };
+                    parsedNotes = [newNote, ...parsedNotes];
+                }
+                await AsyncStorage.setItem('@stepout_notes', JSON.stringify(parsedNotes));
+            }
+            navigation.goBack();
+        };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -29,7 +64,7 @@ export default function AddNoteScreen({navigation} : any) {
             >
                 {/* Header */}
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <TouchableOpacity onPress={handleSaveAndExit}>
                         <Image source={require('../assets/return_icon.png')} style={styles.icon} />
                     </TouchableOpacity>
 
@@ -53,7 +88,19 @@ export default function AddNoteScreen({navigation} : any) {
                 </View>
 
                 {/* Date text */}
-                <Text style={styles.dateText}>5 березня 2026р. о 22:31</Text>
+                <Text style={styles.dateText}>
+                    {existingNote ? existingNote.date : 'Нова нотатка'}
+                </Text>
+                {/* Title Input */}
+                <TextInput
+                    style={{ paddingHorizontal: 25, fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 5 }}
+                    placeholder="Назва нотатки"
+                    placeholderTextColor="#A98A73"
+                    value={noteTitle}
+                    onChangeText={setNoteTitle}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                />
 
                 {/* Text Input */}
                 <TextInput
@@ -87,10 +134,10 @@ export default function AddNoteScreen({navigation} : any) {
                             <TouchableOpacity><Image source={require('../assets/notes_paperclip_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
                             <TouchableOpacity><Image source={require('../assets/notes_pencil_icon.png')} style={styles.toolIcon} /></TouchableOpacity>
                         </View>
-
                         <TouchableOpacity
                             style={styles.newNote}
                             onPress={() => {
+                                setNoteTitle('');
                                 setNoteText('');
                                 finishTyping();
                             }}
@@ -115,11 +162,11 @@ export default function AddNoteScreen({navigation} : any) {
                         <Text style={styles.modalTitle}>
                             Ви дійсно бажаєте{'\n'}видалити цю нотатку?
                         </Text>
-                        
+
                         <TouchableOpacity style={styles.modalButton} onPress={handleDelete}>
                             <Text style={styles.modalButtonTextRed}>Видалити</Text>
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity style={styles.modalButton} onPress={() => setDeleteModalVisible(false)}>
                             <Text style={styles.modalButtonText}>Скасувати</Text>
                         </TouchableOpacity>
