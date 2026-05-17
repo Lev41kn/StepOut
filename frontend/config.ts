@@ -1,2 +1,3 @@
 // Placeholder API url
-export const API_URL = 'http://192.168.X.X:5000/api';
+// 192.168.0.135
+export const API_URL = 'http://192.168.0.135:5000/api';

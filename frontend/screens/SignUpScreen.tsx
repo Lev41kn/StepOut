@@ -47,9 +47,10 @@ export default function SignUpScreen({ navigation }: any) {
     // --- NEW BACKEND LOGIC GOES HERE ---
     // If both pass, send to the backend!
     if (isValid) {
+      console.log("4. Validation passed! Sending to backend...");
       try {
         // Send the data to the backend
-        const response = await fetch(`${API_URL}/signup`, { 
+        const response = await fetch(`${API_URL}/register`, { 
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -65,15 +66,10 @@ export default function SignUpScreen({ navigation }: any) {
         const data = await response.json();
 
         if (response.ok) {
-          alert("Success! The backend received the data.");
         
           // Once we know the backend works, we will uncomment your navigation!
-          /*
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-          });
-          */
+          navigation.navigate('LoginScreen');
+        
         } else {
           alert("Backend says: " + data.message); // E.g., "Email already in use"
         }

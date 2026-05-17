@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { API_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
@@ -13,19 +16,49 @@ export default function LoginScreen({ navigation }: any) {
   const [hasError, setHasError] = useState(false);
 
 
-  const handleLogin = () => {
-      
-      if (email === '' || password.length < 8) {
-        setHasError(true);
-      } else {
-        setHasError(false);
-      
-        navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
+  const handleLogin = async () => {
+  
+  if (email === '' || password.length < 8) {
+    setHasError(true);
+  } else {
+    setHasError(false);
+
+    // --- NEW BACKEND LOGIC STARTS HERE ---
+    try {
+      // Send the email and password to Vlad's bouncer
+      const response = await fetch(`${API_URL}/login`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,       
+          password: password, 
+        }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await AsyncStorage.setItem('userToken', data.token);
+
+        console.log("Token Saved Succefully!");
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
+        
+      } else {
+        alert("Backend says: " + data.message); 
+      }
+
+    } catch (error) {
+      console.error("Login fetch error:", error);
+      alert("Could not connect to the server. Is the hotspot still up?");
     }
-  };
+  }
+};
   
 
   return (
