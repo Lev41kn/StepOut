@@ -1,9 +1,27 @@
-import React from 'react';
-import {View, Image, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import React, { useState} from 'react';
+import { View, Image, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen({ navigation }: any){
+
+    const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
+
+    const handleLogout = async () => {
+        setLogoutModalVisible(false);
+        try {
+            await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('userName');
+            
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'LoginScreen' }],
+            });
+        } catch (error) {
+            console.error("Error logging out:", error);
+        }
+    };
 
     return (
 
@@ -68,6 +86,14 @@ export default function SettingsScreen({ navigation }: any){
                     
                 </TouchableOpacity>
 
+                <TouchableOpacity style={styles.menuButton} onPress={() => setLogoutModalVisible(true)}>
+
+                    <Image source={require('../assets/arrow_icon.png')} style={styles.menuArrow} />
+
+                    <Text style={styles.menuText}>Вийти</Text>
+
+                </TouchableOpacity>
+
 
             </View>
 
@@ -119,7 +145,30 @@ export default function SettingsScreen({ navigation }: any){
                           <Image source={require('../assets/profile_icon.png')} style={styles.toolbarIcon} />
                         </TouchableOpacity>
             
-                      </View>
+            </View>
+
+            <Modal
+                transparent={true}
+                visible={isLogoutModalVisible}
+                animationType="fade"
+                onRequestClose={() => setLogoutModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>
+                            Ви дійсно бажаєте{'\n'}вийти з акаунта?
+                        </Text>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={handleLogout}>
+                            <Text style={styles.modalButtonTextRed}>Вийти</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.modalButton} onPress={() => setLogoutModalVisible(false)}>
+                            <Text style={styles.modalButtonText}>Скасувати</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
         </SafeAreaView>
 
@@ -231,6 +280,51 @@ const styles = StyleSheet.create({
     },
     toolbarIcon: {
         
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: '#FFAA77',
+        width: '75%',
+        borderRadius: 20,
+        paddingVertical: 30,
+        paddingHorizontal: 25,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 10,
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+        textAlign: 'center',
+        marginBottom: 25,
+        lineHeight: 22,
+    },
+    modalButton: {
+        backgroundColor: '#FFEBD2',
+        width: '100%',
+        paddingVertical: 12,
+        borderRadius: 25,
+        alignItems: 'center',
+        marginVertical: 8,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    modalButtonTextRed: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#C00000',
     },
 
 });

@@ -41,6 +41,7 @@ export default function LoginScreen({ navigation }: any) {
 
       if (response.ok) {
         await AsyncStorage.setItem('userToken', data.token);
+        await AsyncStorage.setItem('userName', data.name);
 
         console.log("Token Saved Succefully!");
         

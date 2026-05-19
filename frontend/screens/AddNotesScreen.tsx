@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Keyboard, Modal } from 'react-native';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Keyboard, Modal, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 🔴 DON'T FORGET TO IMPORT YOUR API URL!
+import { API_URL } from '../config'; 
 
 export default function AddNoteScreen({route, navigation } : any) {
 
     const existingNote = route.params?.note;
+    
+    // 🟢 UPDATED: Look for .content first (from the database), fallback to .text just in case
     const [noteTitle, setNoteTitle] = useState(existingNote ? existingNote.title : '');
-    const [noteText, setNoteText] = useState(existingNote ? existingNote.text : '');
+    const [noteText, setNoteText] = useState(existingNote ? (existingNote.content || existingNote.text) : '');
 
     const [isTyping, setIsTyping] = useState(false);
-
-    // --- ADDED MODAL STATE ---
     const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
 
     const finishTyping = () => {
@@ -19,42 +22,81 @@ export default function AddNoteScreen({route, navigation } : any) {
         setIsTyping(false);
     }
 
+    // 🟢 UPDATED: Cloud Delete Function
     const handleDelete = async () => {
-            setDeleteModalVisible(false);
-            if (existingNote) {
-                const storedNotes = await AsyncStorage.getItem('@stepout_notes');
-                if (storedNotes) {
-                    const parsedNotes = JSON.parse(storedNotes).filter((n: any) => n.id !== existingNote.id);
-                    await AsyncStorage.setItem('@stepout_notes', JSON.stringify(parsedNotes));
+        setDeleteModalVisible(false);
+        
+        if (existingNote) {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                if (!token) return;
+
+                // Send DELETE request to Vlad's route: /api/notes/<id>
+                const response = await fetch(`${API_URL}/notes/${existingNote.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error("Failed to delete from cloud");
+                    Alert.alert("Помилка", "Не вдалося видалити нотатку.");
+                    return; // Stop here if it failed
                 }
+            } catch (error) {
+                console.error("Network error during delete:", error);
+                return;
             }
-            navigation.goBack();
         }
+        navigation.goBack();
+    }
 
+    // 🟢 UPDATED: Cloud Save & Update Function
     const handleSaveAndExit = async () => {
-            if (noteTitle.trim().length > 0 || noteText.trim().length > 0) {
-                const storedNotes = await AsyncStorage.getItem('@stepout_notes');
-                let parsedNotes = storedNotes ? JSON.parse(storedNotes) : [];
-
-                if (existingNote) {
-                    parsedNotes = parsedNotes.map((n: any) =>
-                        n.id === existingNote.id ? { ...n, title: noteTitle, text: noteText } : n
-                    );
-                } else {
-                    const today = new Date();
-                    const formattedDate = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}.${today.getFullYear()}`;
-                    const newNote = {
-                        id: Date.now().toString(),
-                        title: noteTitle,
-                        text: noteText,
-                        date: formattedDate,
-                    };
-                    parsedNotes = [newNote, ...parsedNotes];
+        // Only save if there is actually text!
+        if (noteTitle.trim().length > 0 || noteText.trim().length > 0) {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                if (!token) {
+                    Alert.alert("Помилка", "Ви не авторизовані.");
+                    return;
                 }
-                await AsyncStorage.setItem('@stepout_notes', JSON.stringify(parsedNotes));
+
+                // If we are editing an old note, use PUT and attach the ID. If new, use POST.
+                const url = existingNote ? `${API_URL}/notes/${existingNote.id}` : `${API_URL}/notes/`;
+                const method = existingNote ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: noteTitle,
+                        content: noteText, // Map your noteText state to the 'content' column in DB
+                        is_pinned: existingNote?.is_pinned || false // Keep it pinned if it was already pinned!
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error("Backend Error:", data);
+                    Alert.alert("Помилка", data.message || "Не вдалося зберегти нотатку");
+                    return; // Don't exit the screen if save failed
+                }
+            } catch (error) {
+                console.error("Network error during save:", error);
+                Alert.alert("Помилка", "Перевірте підключення до інтернету");
+                return;
             }
-            navigation.goBack();
-        };
+        }
+        
+        // If save was successful (or if inputs were completely empty), go back to list
+        navigation.goBack();
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -87,10 +129,11 @@ export default function AddNoteScreen({route, navigation } : any) {
                     </View>
                 </View>
 
-                {/* Date text */}
+                {/* 🟢 UPDATED: Show cloud created_at date instead of local formatted date */}
                 <Text style={styles.dateText}>
-                    {existingNote ? existingNote.date : 'Нова нотатка'}
+                    {existingNote ? (existingNote.created_at || existingNote.date) : 'Нова нотатка'}
                 </Text>
+                
                 {/* Title Input */}
                 <TextInput
                     style={{ paddingHorizontal: 25, fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 5 }}
@@ -155,9 +198,7 @@ export default function AddNoteScreen({route, navigation } : any) {
                 animationType="fade"
                 onRequestClose={() => setDeleteModalVisible(false)}
             >
-                {/* Darkened Background Overlay */}
                 <View style={styles.modalOverlay}>
-                    {/* Orange Modal Box */}
                     <View style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>
                             Ви дійсно бажаєте{'\n'}видалити цю нотатку?

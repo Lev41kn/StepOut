@@ -1,30 +1,62 @@
 import React, { useState, useCallback } from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity, FlatList, ImageBackground } from 'react-native';
+import { View, Image, Text, StyleSheet, TouchableOpacity, FlatList, ImageBackground, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// 🔴 IMPORT YOUR API URL (Make sure the path is correct for your folder structure!)
+import { API_URL } from '../config'; 
+
 export default function NotesScreen({ navigation } : any) {
     const [notes, setNotes] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true); // Added a quick loading state!
 
    useFocusEffect(
      useCallback(() => {
-       const loadNotes = async () => {
+       const fetchCloudNotes = async () => {
          try {
-           const storedNotes = await AsyncStorage.getItem('@stepout_notes');
-           if (storedNotes) {
-             setNotes(JSON.parse(storedNotes));
+           setLoading(true);
+           // 1. Get the VIP Wristband
+           const token = await AsyncStorage.getItem('userToken');
+           
+           if (!token) {
+             console.log("No token found");
+             return;
+           }
+
+           // 2. Ask the Waiter for this specific user's notes
+           // Assuming Vlad's blueprint is registered under /api/notes
+           const response = await fetch(`${API_URL}/notes/`, {
+             method: 'GET',
+             headers: {
+               'Authorization': `Bearer ${token}`, // Pass the wristband!
+               'Content-Type': 'application/json',
+             },
+           });
+
+           const data = await response.json();
+
+           // 3. Save the cloud notes to the screen
+           if (response.ok && data.status === 'success') {
+             setNotes(data.notes);
+           } else {
+             console.error("Backend error:", data);
+             console.log("Token being sent:", token);
            }
          } catch (error) {
-           console.error("Error loading notes:", error);
+           console.error("Network error fetching notes:", error);
+         } finally {
+           setLoading(false);
          }
        };
-       loadNotes();
+
+       fetchCloudNotes();
      }, [])
    );
 
 const renderNoteCard = ({ item }: any) => {
     return (
+      
       <TouchableOpacity
         style={styles.noteCard}
         activeOpacity={0.8}
@@ -33,17 +65,20 @@ const renderNoteCard = ({ item }: any) => {
         <ImageBackground
           source={require('../assets/savednote_bg.png')}
           style={styles.cardBackground}
-          resizeMode="stretch" // Ensures the asset spans the full box boundaries perfectly
+          resizeMode="stretch" 
         >
-          {/* Card Header Content Area */}
           <View style={styles.noteHeader}>
-            <Text style={styles.noteTitle} numberOfLines={1}>{item.title || 'Без назви'}</Text>
-            <Text style={styles.noteDate}>{item.date}</Text>
+            <Text style={styles.noteTitle} numberOfLines={1}>
+              {/* Added a little pin icon if Vlad's DB says it's pinned! */}
+              {item.is_pinned ? '📌 ' : ''}{item.title || 'Без назви'}
+            </Text>
+            {/* 🔴 Changed item.date to item.created_at to match database */}
+            <Text style={styles.noteDate}>{item.created_at}</Text>
           </View>
 
-          {/* Card Body Content Area */}
           <View style={styles.noteBody}>
-            <Text style={styles.notePreview} numberOfLines={2}>{item.text || '...'}</Text>
+             {/* 🔴 Changed item.text to item.content to match database */}
+            <Text style={styles.notePreview} numberOfLines={2}>{item.content || '...'}</Text>
           </View>
         </ImageBackground>
       </TouchableOpacity>
@@ -51,27 +86,44 @@ const renderNoteCard = ({ item }: any) => {
   };
 
   return (
+    
     <SafeAreaView style={styles.container}>
-      {/* Search Bar */}
       <View style={styles.searchBar}>
         <Image source={require('../assets/notes_search_icon.png')} style={styles.searchBarIcon} />
         <Text style={styles.searchBarText}>Нотатки</Text>
         <Image source={require('../assets/notes_archive_icon.png')} style={styles.searchBarIcon} />
       </View>
 
-      {/* Notes Area (Scrollable List) */}
-      <FlatList
-        data={notes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderNoteCard}
-        contentContainerStyle={styles.contentArea}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>У вас ще немає нотаток. Створіть першу!</Text>
-        }
-      />
+      {/* Show a spinner while the cloud is fetching, otherwise show the list */}
+      {loading ? (
+        <ActivityIndicator size="large" color="#FFB07D" style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={notes}
+          // 🔴 Changed to item.id to match database primary key
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderNoteCard}
+          contentContainerStyle={styles.contentArea}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>У вас ще немає нотаток. Створіть першу!</Text>
+          }
+        />
+      )}
 
-      {/* New Note Button */}
+      {/* 🔴 TEMPORARY NUKE BUTTON - DELETE THIS LATER!
+      <TouchableOpacity 
+        style={{ backgroundColor: 'red', padding: 15, marginHorizontal: 20, marginTop: 10, borderRadius: 10 }}
+        onPress={async () => {
+          await AsyncStorage.removeItem('userToken');
+          alert("Token Deleted! Please reload the app.");
+        }}
+      >
+        <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+          NUKE OLD TOKEN
+        </Text>
+      </TouchableOpacity> */}
+
       <TouchableOpacity
         style={styles.plus}
         onPress={() => navigation.navigate('AddNotesScreen')}
@@ -149,4 +201,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 999, // Guarantees it floats over top of any scroll elements
   },
+  emptyText: { 
+    textAlign: 'center', 
+    marginTop: 50, 
+    color: '#5C3A21', 
+    fontSize: 16 
+  },
+  plusIcon: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  }
 });

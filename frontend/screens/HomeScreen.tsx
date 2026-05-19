@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Image, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { PaperProvider, Text, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { API_URL } from '../config'; 
 
 //Theme
 const theme = {
@@ -16,9 +20,14 @@ const theme = {
 };
 
 export default function HomeScreen({ navigation }: any ) {
-  // --- MOCK STATE ---
+  // --- CLOUD STATE ---
+  const [streak, setStreak] = useState(0);
+  const [moodValue, setMoodValue] = useState(50); // Defaults to the middle
+  const [hasLoggedMoodToday, setHasLoggedMoodToday] = useState(false);
+
+  // --- MOCK TASKS STATE ---
   const [activeTasks, setActiveTasks] = useState([
-    { id: '1', text: 'Відміть свій настрій сьогодні.', isCompleted: true },
+    { id: '1', text: 'Відміть свій настрій сьогодні.', isCompleted: false },
     { id: '2', text: 'Привітатися з кимось — «Привіт».', isCompleted: false },
     { id: '3', text: 'Поставити просте питання в магазині.', isCompleted: false },
   ]);
@@ -27,26 +36,81 @@ export default function HomeScreen({ navigation }: any ) {
     { id: 'd1', text: 'Напиши одну річ, якою ти можеш бути задоволений сьогодні', isCompleted: false }
   ]);
 
-  // --- SLIDER ---
-  const [moodValue, setMoodValue] = useState(15);
-  const handleSlidingComplete = (val: number) => {
-      const today = new Date();
+  // --- 1. LOAD DATA WHEN SCREEN OPENS ---
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTodayStatus = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          if (!token) return;
 
-      const moodPayload = {
-        mood_score: Math.round(val),
-        day: today.getDate(),
-        month: today.getMonth() + 1,
-        year: today.getFullYear(),
+          const response = await fetch(`${API_URL}/mood/today`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          const data = await response.json();
+          if (response.ok && data.status === 'success') {
+            setStreak(data.streak);
+            
+            if (data.today_mood !== null) {
+              setMoodValue(data.today_mood);
+              setHasLoggedMoodToday(true);
+              
+              // Automatically check off the "mood" task if it's already done
+              setActiveTasks(currentTasks =>
+                currentTasks.map(task =>
+                  task.id === '1' ? { ...task, isCompleted: true } : task
+                )
+              );
+            } else {
+              setHasLoggedMoodToday(false);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching daily status:", error);
+        }
       };
-      console.log("Ready for backend:", moodPayload);
 
-      setActiveTasks(currentTasks =>
+      fetchTodayStatus();
+    }, [])
+  );
+
+  // --- 2. SAVE MOOD TO CLOUD ---
+  const handleSlidingComplete = async (val: number) => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/mood/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mood_value: val
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          setStreak(data.streak); // Update streak instantly from backend math
+          setHasLoggedMoodToday(true);
+          
+          setActiveTasks(currentTasks =>
             currentTasks.map(task =>
               task.id === '1' ? { ...task, isCompleted: true } : task
             )
           );
+        } else {
+          Alert.alert("Помилка", "Не вдалося зберегти настрій.");
+        }
+      } catch (error) {
+        console.error("Network error saving mood:", error);
+      }
   };
-
 
   // --- TOGGLE FUNCTIONS ---
   const toggleActiveTask = (id: string) => {
@@ -71,6 +135,7 @@ export default function HomeScreen({ navigation }: any ) {
         <PaperProvider theme={theme}>
           <SafeAreaView style={styles.container}>
 
+            {/* TOP SETTINGS ICON */}
             <View style={styles.setIcon}>
               <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
                 <Image source={require('../assets/settings_icon.png')} style={styles.setIconImg} />
@@ -85,18 +150,23 @@ export default function HomeScreen({ navigation }: any ) {
                 paddingBottom: 130 
               }}
             >
-              {/* Streak Card */}
+              
+              {/* STREAK CARD */}
               <View style={styles.streakWrapper}>
                 <View style={styles.streakCard}>
-                  <Text variant='headlineSmall' style={styles.streakText}>Стрік: 17 днів</Text>
+                  <Text variant='headlineSmall' style={styles.streakText}>Стрік: {streak} днів</Text>
                 </View>
                 <Image source={require('../assets/streak_fox.png')} style={styles.foxAvatar} />
               </View>
 
-             {/* Mood Card :D */}
+             {/* MOOD CARD */}
              <View style={styles.moodCard}>
-               <Text variant='titleMedium' style={styles.moodTitle}>Оціни свій настрій:</Text>
+               <Text variant='titleMedium' style={styles.moodTitle}>
+                 {hasLoggedMoodToday ? 'Настрій на сьогодні збережено!' : 'Оціни свій настрій:'}
+               </Text>
                <View style={styles.sliderContainer}>
+                 
+                 {/* The Gradient Background */}
                  <View style={{ position: 'absolute', width: '100%', height: '100%', justifyContent: 'center' }}>
                    <LinearGradient
                      colors={['#F07C3B', '#F8D800', '#03C03C']}
@@ -104,6 +174,8 @@ export default function HomeScreen({ navigation }: any ) {
                      style={styles.gradientLine}
                    />
                  </View>
+                 
+                 {/* The Thumb & Invisible Slider */}
                  <View style={{ height: '100%', marginHorizontal: 12 }}>
                    <Image
                      source={require('../assets/slider_thumb.png')}
