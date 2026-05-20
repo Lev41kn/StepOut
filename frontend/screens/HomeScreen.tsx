@@ -22,57 +22,63 @@ const theme = {
 export default function HomeScreen({ navigation }: any ) {
   // --- CLOUD STATE ---
   const [streak, setStreak] = useState(0);
-  const [moodValue, setMoodValue] = useState(50); // Defaults to the middle
+  const [moodValue, setMoodValue] = useState(50);
   const [hasLoggedMoodToday, setHasLoggedMoodToday] = useState(false);
 
-  // --- MOCK TASKS STATE ---
-  const [activeTasks, setActiveTasks] = useState([
-    { id: '1', text: 'Відміть свій настрій сьогодні.', isCompleted: false },
-    { id: '2', text: 'Привітатися з кимось — «Привіт».', isCompleted: false },
-    { id: '3', text: 'Поставити просте питання в магазині.', isCompleted: false },
-  ]);
-
-  const [dailyTasks, setDailyTasks] = useState([
-    { id: 'd1', text: 'Напиши одну річ, якою ти можеш бути задоволений сьогодні', isCompleted: false }
-  ]);
+  // 🟢 REAL TASKS STATE
+  const [activeTasks, setActiveTasks] = useState<any[]>([]);
+  const [dailyTask, setDailyTask] = useState<any>(null); // We only have 1 daily task
 
   // --- 1. LOAD DATA WHEN SCREEN OPENS ---
   useFocusEffect(
     useCallback(() => {
-      const fetchTodayStatus = async () => {
+      
+      const fetchTodayMood = async (token: string) => {
         try {
-          const token = await AsyncStorage.getItem('userToken');
-          if (!token) return;
-
           const response = await fetch(`${API_URL}/mood/today`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          
           const data = await response.json();
           if (response.ok && data.status === 'success') {
             setStreak(data.streak);
-            
             if (data.today_mood !== null) {
               setMoodValue(data.today_mood);
               setHasLoggedMoodToday(true);
-              
-              // Automatically check off the "mood" task if it's already done
-              setActiveTasks(currentTasks =>
-                currentTasks.map(task =>
-                  task.id === '1' ? { ...task, isCompleted: true } : task
-                )
-              );
             } else {
               setHasLoggedMoodToday(false);
             }
           }
         } catch (error) {
-          console.error("Error fetching daily status:", error);
+          console.error("Error fetching mood:", error);
         }
       };
 
-      fetchTodayStatus();
+      // 🟢 NEW: FETCH TASKS FROM CLOUD
+      const fetchTodayTasks = async (token: string) => {
+        try {
+          const response = await fetch(`${API_URL}/tasks/today`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+          if (response.ok && data.status === 'success') {
+            setDailyTask(data.daily_task);
+            setActiveTasks(data.active_tasks || []);
+          }
+        } catch (error) {
+          console.error("Error fetching tasks:", error);
+        }
+      };
+
+      const loadAllData = async () => {
+          const token = await AsyncStorage.getItem('userToken');
+          if (!token) return;
+          await fetchTodayMood(token);
+          await fetchTodayTasks(token);
+      };
+
+      loadAllData();
     }, [])
   );
 
@@ -88,22 +94,13 @@ export default function HomeScreen({ navigation }: any ) {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            mood_value: val
-          }),
+          body: JSON.stringify({ mood_value: val }),
         });
 
         const data = await response.json();
-        
         if (response.ok && data.status === 'success') {
-          setStreak(data.streak); // Update streak instantly from backend math
+          setStreak(data.streak); 
           setHasLoggedMoodToday(true);
-          
-          setActiveTasks(currentTasks =>
-            currentTasks.map(task =>
-              task.id === '1' ? { ...task, isCompleted: true } : task
-            )
-          );
         } else {
           Alert.alert("Помилка", "Не вдалося зберегти настрій.");
         }
@@ -112,21 +109,38 @@ export default function HomeScreen({ navigation }: any ) {
       }
   };
 
-  // --- TOGGLE FUNCTIONS ---
-  const toggleActiveTask = (id: string) => {
-    setActiveTasks(currentTasks => 
-      currentTasks.map(task => 
-        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
-      )
-    );
-  };
+  // --- 3. 🟢 TOGGLE CLOUD TASKS ---
+  const toggleTask = async (userTaskId: number, isDaily: boolean = false) => {
+    // 1. Optimistic UI update (feels instant to the user)
+    if (isDaily && dailyTask) {
+        setDailyTask({ ...dailyTask, is_completed: !dailyTask.is_completed });
+    } else {
+        setActiveTasks(currentTasks => 
+            currentTasks.map(task => 
+                task.user_task_id === userTaskId ? { ...task, is_completed: !task.is_completed } : task
+            )
+        );
+    }
 
-  const toggleDailyTask = (id: string) => {
-    setDailyTasks(currentTasks => 
-      currentTasks.map(task => 
-        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
-      )
-    );
+    // 2. Tell the server
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/tasks/toggle/${userTaskId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+            setStreak(data.streak); // Update streak if this task changed it!
+        } else {
+            console.error("Failed to toggle task in cloud.");
+        }
+    } catch (error) {
+        console.error("Network error toggling task:", error);
+    }
   };
 
   return (
@@ -142,14 +156,7 @@ export default function HomeScreen({ navigation }: any ) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              style={{ flex: 1 }}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingTop: 40,
-                paddingBottom: 130 
-              }}
-            >
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 40, paddingBottom: 130 }}>
               
               {/* STREAK CARD */}
               <View style={styles.streakWrapper}>
@@ -165,8 +172,6 @@ export default function HomeScreen({ navigation }: any ) {
                  {hasLoggedMoodToday ? 'Настрій на сьогодні збережено!' : 'Оціни свій настрій:'}
                </Text>
                <View style={styles.sliderContainer}>
-                 
-                 {/* The Gradient Background */}
                  <View style={{ position: 'absolute', width: '100%', height: '100%', justifyContent: 'center' }}>
                    <LinearGradient
                      colors={['#F07C3B', '#F8D800', '#03C03C']}
@@ -174,27 +179,14 @@ export default function HomeScreen({ navigation }: any ) {
                      style={styles.gradientLine}
                    />
                  </View>
-                 
-                 {/* The Thumb & Invisible Slider */}
                  <View style={{ height: '100%', marginHorizontal: 12 }}>
                    <Image
                      source={require('../assets/slider_thumb.png')}
                      pointerEvents="none"
-                     style={[
-                       styles.sliderThumb,
-                       {
-                         left: `${moodValue}%`,
-                         transform: [{ translateX: -10 }]
-                       }
-                     ]}
+                     style={[styles.sliderThumb, { left: `${moodValue}%`, transform: [{ translateX: -10 }] }]}
                    />
                    <Slider
-                     style={{
-                       position: 'absolute',
-                       width: '100%',
-                       height: 80,
-                       top: -20,
-                     }}
+                     style={{ position: 'absolute', width: '100%', height: 80, top: -20 }}
                      minimumValue={0}
                      maximumValue={100}
                      value={moodValue}
@@ -205,59 +197,61 @@ export default function HomeScreen({ navigation }: any ) {
                      thumbTintColor="transparent"
                    />
                  </View>
-
                </View>
              </View>
 
-              {/* ACTIVE TASKS CARD */}
+              {/* 🟢 ACTIVE TASKS CARD */}
               <View style={styles.activeCard}>
                 <View style={styles.activeHeader}>
                   <Text variant='titleMedium' style={styles.activeHeaderText}>Активні завдання:</Text>
                 </View>
                 <View style={styles.activeList}>
                   
-                  {activeTasks.map((task) => (
-                    <TouchableOpacity 
-                      key={task.id} 
-                      style={styles.activeTask}
-                      onPress={() => toggleActiveTask(task.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.activeText}>{task.text}</Text>
-                      <View style={[
-                        styles.activeCheck, 
-                        task.isCompleted && styles.activeCheckCompleted
-                      ]}>
-                        {task.isCompleted && <Text style={styles.checkMarkText}>✓</Text>}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                  {activeTasks.length > 0 ? (
+                      activeTasks.map((task) => (
+                        <TouchableOpacity 
+                          key={task.user_task_id} 
+                          style={styles.activeTask}
+                          onPress={() => toggleTask(task.user_task_id, false)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.activeText}>{task.description}</Text>
+                          <View style={[styles.activeCheck, task.is_completed && styles.activeCheckCompleted]}>
+                            {task.is_completed ? <Text style={styles.checkMarkText}>✓</Text> : null}
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                  ) : (
+                      <Text style={{ textAlign: 'center', color: '#A98A73', marginTop: 10 }}>
+                          Немає активних завдань. Перейдіть у вкладку Завдання, щоб обрати їх!
+                      </Text>
+                  )}
 
                 </View>
               </View>
 
-              {/* DAILY TASK CARD */}
+              {/* 🟢 DAILY TASK CARD */}
               <View style={styles.dailyCard}>
                 <View style={styles.dailyHeader}>
                   <Text variant='titleMedium' style={styles.dailyHeaderText}>Завдання на день:</Text>
                 </View>
                 
-                {dailyTasks.map((task) => (
+                {dailyTask ? (
                   <TouchableOpacity 
-                    key={task.id}
                     style={styles.dailyTask}
-                    onPress={() => toggleDailyTask(task.id)}
+                    onPress={() => toggleTask(dailyTask.user_task_id, true)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.dailyText}>{task.text}</Text>
-                    <View style={[
-                      styles.dailyCheck,
-                      task.isCompleted && styles.activeCheckCompleted
-                    ]}>
-                      {task.isCompleted && <Text style={styles.checkMarkText}>✓</Text>}
+                    <Text style={styles.dailyText}>{dailyTask.description}</Text>
+                    <View style={[styles.dailyCheck, dailyTask.is_completed && styles.activeCheckCompleted]}>
+                      {dailyTask.is_completed ? <Text style={styles.checkMarkText}>✓</Text> : null}
                     </View>
                   </TouchableOpacity>
-                ))}
+                ) : (
+                  <Text style={{ textAlign: 'center', color: '#A98A73', marginTop: 20 }}>
+                      Завантаження завдання...
+                  </Text>
+                )}
                 
               </View>
             </ScrollView>

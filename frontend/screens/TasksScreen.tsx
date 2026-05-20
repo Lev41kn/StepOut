@@ -1,58 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
-/// --- MOCK DATABASE ---
-const MOCK_SUGGESTIONS = [
-  { id: 's1', text: 'Напиши комусь одне нейтральне повідомлення' },
-  { id: 's2', text: 'Запиши голосове повідомлення тільки для себе' },
-  { id: 's3', text: 'Подумки або письмово сформулюй простий комплімент людині' },
-];
-
-const MOCK_ARCHIVE = [
-  { id: 'a1', text: 'Зроби 5 повільних вдихів і видихів 4 секунди — вдих, 6 — видих' },
-  { id: 'a2', text: 'Поставити питання і вислухати відповідь' },
-  { id: 'a3', text: 'Побути в компанії 2-3 людей мінімум 5 хвилин' },
-];
+// 🔴 DON'T FORGET YOUR API URL!
+import { API_URL } from '../config'; 
 
 export default function TasksScreen({ navigation }: any ) {
-  // --- STATE ---
+  // --- CLOUD STATE ---
+  const [lockedTasks, setLockedTasks] = useState<any[]>([]); 
+  const [suggestions, setSuggestions] = useState<any[]>([]); 
+  const [archivedTasks, setArchivedTasks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- 1. FETCH ALL DATA ---
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const todayRes = await fetch(`${API_URL}/tasks/today`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const todayData = await todayRes.json();
+      if (todayRes.ok && todayData.status === 'success') {
+        setLockedTasks(todayData.active_tasks || []);
+      }
+
+      const sugRes = await fetch(`${API_URL}/tasks/suggestions`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const sugData = await sugRes.json();
+      if (sugRes.ok && sugData.status === 'success') {
+        setSuggestions(sugData.suggestions || []);
+      }
+
+      const archRes = await fetch(`${API_URL}/tasks/archive`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const archData = await archRes.json();
+      if (archRes.ok && archData.status === 'success') {
+        setArchivedTasks(archData.archive || []);
+      }
+
+    } catch (error) {
+      console.error("Error fetching tasks data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  // --- 2. RELOAD SUGGESTIONS ---
+  const handleReload = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/tasks/suggestions`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        setSuggestions(data.suggestions);
+      }
+    } catch (error) {
+      console.error("Error reloading suggestions:", error);
+    }
+  };
+
+  // --- 3. PICK A TASK ---
+  const pickTask = async (task: any) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/tasks/pick`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ task_id: task.raw_id })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        fetchData(); // Reload to show it locked!
+      } else {
+        Alert.alert("Увага", data.message || "Не вдалося додати завдання.");
+      }
+    } catch (error) {
+      console.error("Error picking task:", error);
+    }
+  };
+
+  // --- 4. 🟢 UNPICK A TASK ---
+  const unpickTask = async (userTaskId: number) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/tasks/remove/${userTaskId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        fetchData(); // Reload to bring back an empty slot & suggestion!
+      } else {
+        Alert.alert("Увага", data.message || "Не вдалося скасувати завдання.");
+      }
+    } catch (error) {
+      console.error("Error removing task:", error);
+    }
+  };
+
+
+  // --- 5. COMBINE LISTS FOR DISPLAY ---
+  const emptySlots = Math.max(0, 3 - lockedTasks.length);
   
-  const [activeTasks, setActiveTasks] = useState(MOCK_SUGGESTIONS);
-  const [archivedTasks, setArchivedTasks] = useState(MOCK_ARCHIVE);
-
-  // --- LOGIC FUNCTIONS ---
-
-  // 1. Completing a task (Moves from Top -> Bottom)
-  const completeTask = (taskToMove: any) => {
-    
-    setActiveTasks(current => current.filter(task => task.id !== taskToMove.id));
-    
-    setArchivedTasks(current => [taskToMove, ...current]);
-  };
-
-  
-  const uncompleteTask = (taskToMove: any) => {
-    
-    setArchivedTasks(current => current.filter(task => task.id !== taskToMove.id));
-    
-    setActiveTasks(current => [taskToMove, ...current]);
-  };
-
-  // 3. Reloads the active tasks with fresh ones from the "database"
-  const handleReload = () => {
-    
-    const freshTasks = [
-      { id: `new_${Math.random()}`, text: `Нове згенероване завдання #${Math.floor(Math.random() * 1000)}` },
-      { id: `new_${Math.random()}`, text: `Ще одне цікаве завдання #${Math.floor(Math.random() * 1000)}` },
-      { id: `new_${Math.random()}`, text: `Останнє завдання на сьогодні #${Math.floor(Math.random() * 1000)}` },
-    ];
-    setActiveTasks(freshTasks);
-  };
+  const displayTasks = [
+    ...lockedTasks.map(t => ({ 
+        id: `locked_${t.user_task_id}`, 
+        raw_id: t.user_task_id,
+        description: t.description, 
+        isLocked: true,
+        isCompleted: t.is_completed // 🟢 Track if it's already done!
+    })),
+    ...suggestions.slice(0, emptySlots).map(t => ({ 
+        id: `sugg_${t.id}`, 
+        raw_id: t.id,
+        description: t.description, 
+        isLocked: false,
+        isCompleted: false
+    }))
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* --- HEADER --- */}
       <View style={styles.header}>
         <View style={{ flex: 1 }} /> 
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
@@ -62,56 +160,73 @@ export default function TasksScreen({ navigation }: any ) {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* SECTION 1: TASK SUGGESTIONS (ACTIVE) */}
+        {/* SECTION 1: TASK SUGGESTIONS */}
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Пропозиції завдань:</Text>
-            <TouchableOpacity onPress={handleReload}>
-              <Image source={require('../assets/reload_icon.png')} style={styles.reloadIcon} />
-            </TouchableOpacity>
+            {lockedTasks.length < 3 && (
+                <TouchableOpacity onPress={handleReload}>
+                  <Image source={require('../assets/reload_icon.png')} style={styles.reloadIcon} />
+                </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.cardBody}>
-            {activeTasks.length === 0 && (
-              <Text style={styles.emptyText}>Ви виконали всі пропозиції! Натисніть кнопку оновлення.</Text>
+            {isLoading ? (
+               <ActivityIndicator size="small" color="#5C3A21" style={{ marginVertical: 20 }} />
+            ) : displayTasks.length === 0 ? (
+              <Text style={styles.emptyText}>Немає доступних завдань.</Text>
+            ) : (
+              displayTasks.map((task) => (
+                <TouchableOpacity 
+                  key={task.id} 
+                  style={styles.taskRow} 
+                  onPress={() => {
+                      // 🟢 SMART LOGIC: Decide what to do when tapped!
+                      if (task.isLocked) {
+                          if (task.isCompleted) {
+                              Alert.alert("Молодець!", "Ви вже виконали це завдання на Головному екрані. Його не можна скасувати!");
+                          } else {
+                              unpickTask(task.raw_id);
+                          }
+                      } else {
+                          pickTask(task);
+                      }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.taskText}>{task.description}</Text>
+                  
+                  <View style={[styles.checkboxCircle, task.isLocked && styles.checkboxCircleActive]}>
+                     {task.isLocked && <View style={styles.innerDot} />}
+                  </View>
+                </TouchableOpacity>
+              ))
             )}
-            
-            {activeTasks.map((task) => (
-              <TouchableOpacity 
-                key={task.id} 
-                style={styles.taskRow} 
-                onPress={() => completeTask(task)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.taskText}>{task.text}</Text>
-                {/* Empty Checkbox */}
-                <View style={styles.checkboxCircle} />
-              </TouchableOpacity>
-            ))}
           </View>
         </View>
 
-
-        {/* SECTION 2: TASK ARCHIVE (COMPLETED) */}
+        {/* SECTION 2: TASK ARCHIVE */}
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Архів завдань:</Text>
           </View>
 
           <View style={styles.cardBody}>
-            {archivedTasks.map((task) => (
-              <TouchableOpacity 
-                key={task.id} 
-                style={styles.taskRow} 
-                onPress={() => uncompleteTask(task)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.taskText}>{task.text}</Text>
-                {/* Filled Checkbox (Because it's in the archive) */}
+            {archivedTasks.length === 0 && !isLoading && (
+               <Text style={styles.emptyText}>Ваш архів поки що порожній. Виконуйте завдання, щоб заповнити його!</Text>
+            )}
+
+            {archivedTasks.map((task, index) => (
+              <View key={index} style={styles.taskRow}>
+                <Text style={styles.taskText}>
+                    <Text style={{ fontWeight: 'bold', color: '#A98A73' }}>{task.assigned_date}: </Text>
+                    {task.description}
+                </Text>
                 <View style={[styles.checkboxCircle, styles.checkboxCircleActive]}>
                   <View style={styles.innerDot} />
                 </View>
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         </View>
