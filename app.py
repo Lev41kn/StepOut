@@ -43,7 +43,7 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(notes_bp, url_prefix='/api/notes')
 
 # Завдання та Стріки (Tasks)
-app.register_blueprint(tasks_bp, url_prefix='/api')
+app.register_blueprint(tasks_bp, url_prefix='/api/tasks')
 
 # Трекер настрою та Графіки (Mood)
 app.register_blueprint(mood_bp, url_prefix='/api/mood')

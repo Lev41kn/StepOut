@@ -62,6 +62,7 @@ def register():
         conn.commit()
         return jsonify({"status": "success", "message": "Реєстрація успішна!"}), 201
     except mysql.connector.Error as err:
+        print(f"REAL ERROR: -> {err}")
         return jsonify({"status": "error", "message": "Ця пошта вже зареєстрована!"}), 409
     finally:
         if 'cursor' in locals(): cursor.close()
@@ -83,8 +84,8 @@ def login():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
-        if user and check_password_hash(user['password'], password):
-            access_token = create_access_token(identity=user['id'])
+        if user and check_password_hash(user['PASSWORD'], password):
+            access_token = create_access_token(identity=str(user['id']))
             return jsonify({
                 "status": "success", 
                 "message": "Вхід успішний!",
