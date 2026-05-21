@@ -37,6 +37,16 @@
           "behavior": "inset-swipe"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "expo-navigation-bar": {
+        "barStyle": "dark",
+        "visibility": "hidden",
+        "behavior": "inset-swipe"
+      },
+      "eas": {
+        "projectId": "be88feb2-ebc4-4de1-ad43-76ebad027ab3"
+      }
+    }
   }
 }
