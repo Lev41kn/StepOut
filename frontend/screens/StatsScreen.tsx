@@ -1,36 +1,72 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+
+// 🔴 DON'T FORGET YOUR API URL!
+import { API_URL } from '../config'; 
 
 export default function StatsScreen({ navigation }: any ) {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('Дні');
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // --- DATA ---
   const tabs = ['Дні', 'Тижні', 'Місяці'];
-  const yAxis = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-  
-  const xAxisData: any = {
-    'Дні': ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-    'Тижні': ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
-    'Місяці': ['01', '05', '10', '15', '20', '25', '30'],
+  const yAxis = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]; // Visual Y-Axis (representing 10-100)
+
+  // --- FETCH DATA FROM CLOUD ---
+  const fetchChartData = async (tabName: string) => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      // Translate the tab name to the API parameter Vlad expects
+      let periodStr = 'days';
+      if (tabName === 'Тижні') periodStr = 'weeks';
+      if (tabName === 'Місяці') periodStr = 'months';
+
+      const response = await fetch(`${API_URL}/mood/chart?period=${periodStr}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.status === 'success') {
+        // Vlad's API might return 30 items. 
+        // To make it fit your beautiful UI, we grab only the last 7 items!
+        const last7Items = data.chart_data.slice(-7);
+        setChartData(last7Items);
+      }
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // Trigger fetch when screen opens AND when tab changes
+  useFocusEffect(
+    useCallback(() => {
+      fetchChartData(activeTab);
+    }, [activeTab])
+  );
+
   const getDateLabel = () => {
-    if (activeTab === 'Дні') return ' 13 Березня ';
-    if (activeTab === 'Тижні') return ' 9-15 Березня ';
-    return ' Березень '; 
+    if (activeTab === 'Дні') return ' Останні 7 днів ';
+    if (activeTab === 'Тижні') return ' Останні 7 тижнів ';
+    return ' Останні 7 місяців '; 
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* --- HEADER --- */}
       <View style={styles.header}>
-
         <View style={{ flex: 1 }} /> 
-
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
-          {/* Make sure you have a gear icon in your assets! */}
           <Image source={require('../assets/settings_icon.png')} style={styles.settingsIcon} />
         </TouchableOpacity>
       </View>
@@ -58,77 +94,109 @@ export default function StatsScreen({ navigation }: any ) {
       {/* --- CHART SECTION --- */}
       <View style={styles.chartWrapper}>
 
-        {/* --- NEW DATE NAVIGATOR --- */}
+        {/* --- DATE NAVIGATOR --- */}
         <View style={styles.dateNavigator}>
           <TouchableOpacity onPress={() => console.log('Previous Date')}>
             <Text style={styles.dateArrow}>{'<'}</Text>
           </TouchableOpacity>
-          
           <Text style={styles.dateLabel}>{getDateLabel()}</Text>
-          
           <TouchableOpacity onPress={() => console.log('Next Date')}>
             <Text style={styles.dateArrow}>{'>'}</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.chartLayout}>
-          {/* Y-AXIS (Numbers 10 down to 1) */}
-          <View style={styles.yAxisContainer}>
-            {yAxis.map((num) => {
-              // Figma design has specific colors and icons for 10, 5, and 1
-              let textColor = '#5C3A21'; // Default brown
-              if (num === 10) textColor = '#4CAF50'; // Green
-              if (num === 5) textColor = '#FF9800'; // Orange
-              if (num === 1) textColor = '#F44336'; // Red
-              
-              const showFox = num === 10 || num === 5 || num === 1;
+        {isLoading ? (
+          <View style={{ height: 300, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#F07C3B" />
+          </View>
+        ) : (
+          <>
+            <View style={styles.chartLayout}>
+              {/* Y-AXIS */}
+              <View style={styles.yAxisContainer}>
+                {yAxis.map((num) => {
+                  let textColor = '#5C3A21'; 
+                  if (num === 10) textColor = '#4CAF50'; 
+                  if (num === 5) textColor = '#FF9800'; 
+                  if (num === 1) textColor = '#F44336'; 
+                  
+                  const showFox = num === 10 || num === 5 || num === 1;
 
-              return (
-                <View key={num} style={styles.yAxisRow}>
-                  {showFox && <Image source={require('../assets/fox_head_icon.png')} style={styles.tinyFox} />}
-                  <Text style={[styles.yAxisText, { color: textColor }]}>{num}</Text>
+                  return (
+                    <View key={num} style={styles.yAxisRow}>
+                      {showFox && <Image source={require('../assets/fox_head_icon.png')} style={styles.tinyFox} />}
+                      <Text style={[styles.yAxisText, { color: textColor }]}>{num}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* MAIN GRAPH GRID */}
+              <View style={styles.gridContainer}>
+                {/* Horizontal Lines */}
+                {yAxis.map((num, index) => (
+                  <View key={num} style={[styles.gridLineHorizontal, index === yAxis.length - 1 && styles.gridLineBottom]} />
+                ))}
+                
+                {/* Vertical Lines Overlay */}
+                <View style={styles.verticalLinesOverlay}>
+                  {chartData.map((_, index) => (
+                    <View key={index} style={[styles.gridLineVertical, index === 0 && styles.gridLineLeft]} />
+                  ))}
                 </View>
-              );
-            })}
-          </View>
 
-          {/* MAIN GRAPH GRID */}
-          <View style={styles.gridContainer}>
-            {/* Draw Horizontal Lines */}
-            {yAxis.map((num, index) => (
-              <View key={num} style={[styles.gridLineHorizontal, index === yAxis.length - 1 && styles.gridLineBottom]} />
-            ))}
-            
-            {/* Draw Vertical Lines */}
-            <View style={styles.verticalLinesOverlay}>
-              {xAxisData[activeTab].map((_: any, index: number) => (
-                <View key={index} style={[styles.gridLineVertical, index === 0 && styles.gridLineLeft]} />
-              ))}
+                {/* 🟢 NEW: DATA POINTS PLOTTING OVERLAY 🟢 */}
+                <View style={[StyleSheet.absoluteFillObject, { paddingHorizontal: 0 }]}>
+                    {chartData.map((point, index) => {
+                      // Mood is 0-100. We map this directly to the bottom % of the grid.
+                      const bottomPercentage = Math.max(0, Math.min(100, point.value));
+                      // We evenly space the dots left to right across the 7 columns
+                      const leftPercentage = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+
+                      return (
+                        <View
+                          key={index}
+                          style={{
+                            position: 'absolute',
+                            left: `${leftPercentage}%`,
+                            bottom: `${bottomPercentage}%`,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 6,
+                            backgroundColor: '#F07C3B',
+                            transform: [{ translateX: -6 }, { translateY: 6 }], // Center the dot
+                            zIndex: 10,
+                            borderWidth: 2,
+                            borderColor: '#FFF',
+                          }}
+                        />
+                      );
+                    })}
+                </View>
+
+              </View>
             </View>
-          </View>
-        </View>
 
-        {/* X-AXIS (Dynamic Labels) */}
-        <View style={styles.xAxisContainer}>
-          {/* We add empty space on the left so the X labels align perfectly under the grid */}
-          <View style={styles.yAxisSpacer} /> 
-          
-          <View style={styles.xAxisLabelsWrapper}>
-            {xAxisData[activeTab].map((label: string, index: number) => (
-              <Text 
-                key={index} 
-                style={[
-                  styles.xAxisText, 
-                  // If it's the "Days" tab, rotate the text exactly like your Figma design!
-                  activeTab === 'Дні' && { transform: [{ rotate: '-45deg' }], marginTop: 10, marginLeft: -10 }
-                ]}
-              >
-                {label}
-              </Text>
-            ))}
-          </View>
-        </View>
-
+            {/* X-AXIS (Dynamic Cloud Labels) */}
+            <View style={styles.xAxisContainer}>
+              <View style={styles.yAxisSpacer} /> 
+              <View style={styles.xAxisLabelsWrapper}>
+                {chartData.map((point, index) => (
+                  <Text 
+                    key={index} 
+                    style={[
+                      styles.xAxisText, 
+                      activeTab === 'Дні' && { transform: [{ rotate: '-45deg' }], marginTop: 10, marginLeft: -10 }
+                    ]}
+                  >
+                    {/* The label comes directly from Vlad's SQL! (e.g., '13.03') */}
+                    {point.label}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );

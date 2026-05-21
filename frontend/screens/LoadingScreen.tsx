@@ -3,31 +3,48 @@ import { StyleSheet, View, Image, Text } from 'react-native';
 
 import { useFonts } from 'expo-font';
 
-export default function LoadingScreen( {navigation}: any ){
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-    // Font
-    const [fontsLoaded] = useFonts({
-        'Vollkorn-ExtraBold': require('../assets/fonts/Vollkorn-ExtraBold.ttf')
-    })
+export default function LoadingScreen({ navigation }: any) {
+  const [fontsLoaded] = useFonts({
+    'Vollkorn-ExtraBold': require('../assets/fonts/Vollkorn-ExtraBold.ttf')
+  });
 
-    // Loading Timer
-    useEffect(() => {
+  useEffect(() => {
+    
+    const prepareApp = async () => {
+      try {
+        
+        const token = await AsyncStorage.getItem('userToken');
 
+        
         const timer = setTimeout(() => {
-
-                navigation.replace('LoginScreen');
-
-        }, 3000); // in milliseconds
+          if (token) {
             
+            navigation.replace('MainTabs');
+          } else {
+            
+            navigation.replace('LoginScreen'); 
+          }
+        }, 3000); 
+
+        
         return () => clearTimeout(timer);
 
-    }, [navigation]);
+      } catch (error) {
+        console.error("Error checking token:", error);
+        
+        setTimeout(() => navigation.replace('LoginScreen'), 3000);
+      }
+    };
 
-    
+    prepareApp();
 
-    if(!fontsLoaded){
-        return null;
-    }
+  }, [navigation]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
     // Screen
     return (

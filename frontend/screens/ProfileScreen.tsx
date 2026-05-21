@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback} from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // --- FIXED ACHIEVEMENTS DATA ---
@@ -17,6 +19,28 @@ const ACHIEVEMENTS = [
 ];
 
 export default function ProfileScreen({ navigation }: any) {
+
+  const [userName, setUserName] = useState('Завантаження...');
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserName = async () => {
+        try {
+          const storedName = await AsyncStorage.getItem('userName');
+          if (storedName) {
+            setUserName(storedName);
+          } else {
+            setUserName('Користувач'); 
+          }
+        } catch (error) {
+          console.error("Error fetching name:", error);
+          setUserName('Користувач');
+        }
+      };
+
+      fetchUserName();
+    }, [])
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -58,7 +82,7 @@ export default function ProfileScreen({ navigation }: any) {
             {/* Name Box */}
             <View style={styles.nameBox}>
               <Text style={styles.nameText}>
-                Ім'я:  <Text style={styles.nameBold}>Остап</Text>
+                Ім'я:  <Text style={styles.nameBold}>{userName}</Text>
               </Text>
             </View>
 
