@@ -143,6 +143,23 @@ export default function HomeScreen({ navigation }: any ) {
     }
   };
 
+  // --- 4. 🟢 Fun fact: the Ukrainian language is so hard, that half the country doesn't even know it  ---
+  const getStreakText = (days) => {
+    const mod10 = days % 10;
+    const mod100 = days % 100;
+
+    if (mod100 >= 11 && mod100 <= 14) {
+      return `${days} днів`;
+    }
+    if (mod10 === 1) {
+      return `${days} день`;
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return `${days} дні`;
+    }
+    return `${days} днів`;
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -161,7 +178,9 @@ export default function HomeScreen({ navigation }: any ) {
               {/* STREAK CARD */}
               <View style={styles.streakWrapper}>
                 <View style={styles.streakCard}>
-                  <Text variant='headlineSmall' style={styles.streakText}>Стрік: {streak} днів</Text>
+                  <Text variant='headlineSmall' style={styles.streakText}>
+                    Стрік: {getStreakText(streak)}
+                  </Text>
                 </View>
                 <Image source={require('../assets/streak_fox.png')} style={styles.foxAvatar} />
               </View>
